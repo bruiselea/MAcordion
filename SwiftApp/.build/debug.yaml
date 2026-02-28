@@ -1,0 +1,81 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "AcOrDiOn-arm64-apple-macosx26.0-debug.exe": ["<AcOrDiOn-arm64-apple-macosx26.0-debug.exe>"]
+  "AcOrDiOn-arm64-apple-macosx26.0-debug.module": ["<AcOrDiOn-arm64-apple-macosx26.0-debug.module>"]
+  "PackageStructure": ["<PackageStructure>"]
+  "main": ["<AcOrDiOn-arm64-apple-macosx26.0-debug.exe>","<AcOrDiOn-arm64-apple-macosx26.0-debug.module>"]
+  "test": ["<AcOrDiOn-arm64-apple-macosx26.0-debug.exe>","<AcOrDiOn-arm64-apple-macosx26.0-debug.module>"]
+default: "main"
+nodes:
+  "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn":
+    is-mutated: true
+commands:
+  "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn-entitlement.plist":
+    tool: write-auxiliary-file
+    inputs: ["<entitlement-plist>","<com.apple.security.get-task-allow>"]
+    outputs: ["/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn-entitlement.plist"]
+    description: "Write auxiliary file /Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn-entitlement.plist"
+
+  "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/AcOrDiOnApp.swift","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/AccordionSynth.swift","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/ContentView.swift","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/HingeSensor.swift","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/KeyboardMonitor.swift"]
+    outputs: ["/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/sources"]
+    description: "Write auxiliary file /Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/sources"
+
+  "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionSynth.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeSensor.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.swift.o"]
+    outputs: ["/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.product/Objects.LinkFileList"
+
+  "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"]
+    outputs: ["/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+
+  "<AcOrDiOn-arm64-apple-macosx26.0-debug.exe>":
+    tool: phony
+    inputs: ["<AcOrDiOn-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    outputs: ["<AcOrDiOn-arm64-apple-macosx26.0-debug.exe>"]
+
+  "<AcOrDiOn-arm64-apple-macosx26.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionSynth.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeSensor.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/Modules/AcOrDiOn.swiftmodule"]
+    outputs: ["<AcOrDiOn-arm64-apple-macosx26.0-debug.module>"]
+
+  "C.AcOrDiOn-arm64-apple-macosx26.0-debug.exe":
+    tool: shell
+    inputs: ["/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionSynth.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeSensor.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.product/Objects.LinkFileList"]
+    outputs: ["/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/AcOrDiOn"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-L","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug","-o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn","-module-name","AcOrDiOn","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-alias","-Xlinker","_AcOrDiOn_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.product/Objects.LinkFileList","-Xlinker","-rpath","-Xlinker","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-6.2/macosx","-target","arm64-apple-macosx13.0","-Xlinker","-add_ast_path","-Xlinker","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/Modules/AcOrDiOn.swiftmodule","-plugin-path","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g"]
+
+  "C.AcOrDiOn-arm64-apple-macosx26.0-debug.exe-entitlements":
+    tool: shell
+    inputs: ["/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn-entitlement.plist"]
+    outputs: ["<AcOrDiOn-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    description: "Applying debug entitlements to ./.build/arm64-apple-macosx/debug/AcOrDiOn"
+    args: ["codesign","--force","--sign","-","--entitlements","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn-entitlement.plist","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn"]
+
+  "C.AcOrDiOn-arm64-apple-macosx26.0-debug.module":
+    tool: shell
+    inputs: ["/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/AcOrDiOnApp.swift","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/AccordionSynth.swift","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/ContentView.swift","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/HingeSensor.swift","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/KeyboardMonitor.swift","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/sources"]
+    outputs: ["/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionSynth.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeSensor.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.swift.o","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/Modules/AcOrDiOn.swiftmodule"]
+    description: "Compiling Swift Module 'AcOrDiOn' (5 sources)"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-module-name","AcOrDiOn","-emit-dependencies","-emit-module","-emit-module-path","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/Modules/AcOrDiOn.swiftmodule","-output-file-map","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/output-file-map.json","-incremental","-c","@/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/sources","-I","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx13.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j8","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","AcOrDiOn_main","-swift-version","5","-plugin-path","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g","-Xcc","-isysroot","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks","-Xcc","-fPIC","-Xcc","-g","-package-name","swiftapp"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Package.swift","/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+

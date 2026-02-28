@@ -1,0 +1,40 @@
+{
+  "": {
+    "swift-dependencies": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/master.swiftdeps"
+  },
+  "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/AcOrDiOnApp.swift": {
+    "dependencies": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp.d",
+    "object": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp.swift.o",
+    "swiftmodule": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp~partial.swiftmodule",
+    "swift-dependencies": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp.swiftdeps",
+    "diagnostics": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp.dia"
+  },
+  "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/AccordionSynth.swift": {
+    "dependencies": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionSynth.d",
+    "object": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionSynth.swift.o",
+    "swiftmodule": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionSynth~partial.swiftmodule",
+    "swift-dependencies": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionSynth.swiftdeps",
+    "diagnostics": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionSynth.dia"
+  },
+  "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/ContentView.swift": {
+    "dependencies": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.d",
+    "object": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.swift.o",
+    "swiftmodule": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView~partial.swiftmodule",
+    "swift-dependencies": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.swiftdeps",
+    "diagnostics": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.dia"
+  },
+  "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/HingeSensor.swift": {
+    "dependencies": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeSensor.d",
+    "object": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeSensor.swift.o",
+    "swiftmodule": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeSensor~partial.swiftmodule",
+    "swift-dependencies": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeSensor.swiftdeps",
+    "diagnostics": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeSensor.dia"
+  },
+  "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/Sources/AcOrDiOn/KeyboardMonitor.swift": {
+    "dependencies": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.d",
+    "object": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.swift.o",
+    "swiftmodule": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor~partial.swiftmodule",
+    "swift-dependencies": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.swiftdeps",
+    "diagnostics": "/Users/satounatsuki/Github_projects/AcOrDiOn/SwiftApp/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.dia"
+  }
+}

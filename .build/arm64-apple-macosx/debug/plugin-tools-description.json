@@ -1,0 +1,396 @@
+{
+  "builtTestProducts" : [
+
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.AcOrDiOn-arm64-apple-macosx26.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/sources",
+      "importPath" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/AcOrDiOnApp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Audio/AudioEngine.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Audio/MIDIRecorder.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/KeyboardMonitor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/NoteMapper.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/HingeMonitor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/VelocityCalculator.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Views/ContentView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "AcOrDiOn",
+      "moduleOutputPath" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/Modules/AcOrDiOn.swiftmodule",
+      "objects" : [
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp.swift.o",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AudioEngine.swift.o",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/MIDIRecorder.swift.o",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.swift.o",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/NoteMapper.swift.o",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeMonitor.swift.o",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/VelocityCalculator.swift.o",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "AcOrDiOn_main",
+        "-swift-version",
+        "5",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "acordion"
+      ],
+      "outputFileMapPath" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AudioEngine.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/MIDIRecorder.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/NoteMapper.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeMonitor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/VelocityCalculator.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/Modules/AcOrDiOn.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/AcOrDiOnApp.swift",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Audio/AudioEngine.swift",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Audio/MIDIRecorder.swift",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/KeyboardMonitor.swift",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/NoteMapper.swift",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/HingeMonitor.swift",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/VelocityCalculator.swift",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Views/ContentView.swift"
+      ],
+      "tempsPath" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "AcOrDiOn" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "AcOrDiOn",
+      "-package-name",
+      "acordion",
+      "-c",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/AcOrDiOnApp.swift",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Audio/AudioEngine.swift",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Audio/MIDIRecorder.swift",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/KeyboardMonitor.swift",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/NoteMapper.swift",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/HingeMonitor.swift",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/VelocityCalculator.swift",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Views/ContentView.swift",
+      "-I",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "AcOrDiOn_main",
+      "-swift-version",
+      "5",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "acordion",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "AcOrDiOn" : [
+
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  },
+  "traitConfiguration" : {
+    "default" : {
+
+    }
+  },
+  "writeCommands" : {
+    "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn-entitlement.plist" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<entitlement-plist>"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<com.apple.security.get-task-allow>"
+        }
+      ],
+      "outputFilePath" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn-entitlement.plist"
+    },
+    "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/AcOrDiOnApp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Audio/AudioEngine.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Audio/MIDIRecorder.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/KeyboardMonitor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/NoteMapper.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/HingeMonitor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/VelocityCalculator.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Views/ContentView.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/sources"
+    },
+    "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AcOrDiOnApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AudioEngine.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeMonitor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/MIDIRecorder.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/NoteMapper.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/VelocityCalculator.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.product/Objects.LinkFileList"
+    },
+    "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}
