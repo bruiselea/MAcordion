@@ -17,8 +17,8 @@ class KeyboardMonitor: ObservableObject {
         0, 1, 2, 3, 5, 4, 38, 40, 37, 41,
         // Black keys: W E T Y U O P
         13, 14, 17, 16, 32, 31, 35,
-        // Control keys: Z X Tab
-        6, 7, 48
+        // Control keys: Z X Tab Space Enter
+        6, 7, 48, 49, 36
     ]
     
     init() {

@@ -6,6 +6,7 @@ import AudioToolbox
 class AudioEngine: ObservableObject {
     private var audioEngine: AVAudioEngine?
     private var sampler: AVAudioUnitSampler?
+    private var eqFilter: AVAudioUnitEQ?
     
     @Published var isReady: Bool = false
     
@@ -28,14 +29,26 @@ class AudioEngine: ObservableObject {
         
         audioEngine = AVAudioEngine()
         sampler = AVAudioUnitSampler()
+        eqFilter = AVAudioUnitEQ(numberOfBands: 1)
         
-        guard let engine = audioEngine, let sampler = sampler else {
-            print("AudioEngine: Failed to create audio engine")
+        guard let engine = audioEngine, let sampler = sampler, let eq = eqFilter else {
+            print("AudioEngine: Failed to create audio engine components")
             return
         }
         
+        // Setup Lowpass filter
+        let filterParams = eq.bands[0]
+        filterParams.filterType = .lowPass
+        filterParams.frequency = 20000.0 // Start wide open
+        filterParams.bandwidth = 1.0     // 1 octave
+        filterParams.bypass = false
+        
         engine.attach(sampler)
-        engine.connect(sampler, to: engine.mainMixerNode, format: nil)
+        engine.attach(eq)
+        
+        // Connect nodes: Sampler -> EQ -> MainMixer
+        engine.connect(sampler, to: eq, format: nil)
+        engine.connect(eq, to: engine.mainMixerNode, format: nil)
         
         do {
             try engine.start()
@@ -116,6 +129,26 @@ class AudioEngine: ObservableObject {
         
         // Use MIDI expression (CC 11) to control volume dynamically
         sampler.sendController(11, withValue: velocity, onChannel: 0)
+    }
+    
+    /// Update filter cutoff frequency based on bellows pressure
+    /// - Parameter pressure: 0.0 to 1.0
+    func updateFilter(pressure: Double) {
+        guard let eqFilter = eqFilter else { return }
+        
+        // Map pressure to frequency (Logarithmic scale works best for audio)
+        // 0.0 pressure = 400Hz (very muffled)
+        // 1.0 pressure = 8000+ Hz (bright and reedy)
+        let minFreq: Double = 400.0
+        let maxFreq: Double = 10000.0
+        
+        // Logarithmic interpolation
+        let logMin = log(minFreq)
+        let logMax = log(maxFreq)
+        let targetLog = logMin + (logMax - logMin) * pressure
+        let currentFreq = exp(targetLog)
+        
+        eqFilter.bands[0].frequency = Float(currentFreq)
     }
     
     /// Stop all notes

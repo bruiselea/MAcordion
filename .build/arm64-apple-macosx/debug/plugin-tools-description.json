@@ -44,11 +44,19 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Models/BellowsModel.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/HingeMonitor.swift"
         },
         {
           "kind" : "file",
           "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/VelocityCalculator.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/ViewModels/AccordionViewModel.swift"
         },
         {
           "kind" : "file",
@@ -72,8 +80,10 @@
         "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/MIDIRecorder.swift.o",
         "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/KeyboardMonitor.swift.o",
         "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/NoteMapper.swift.o",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/BellowsModel.swift.o",
         "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeMonitor.swift.o",
         "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/VelocityCalculator.swift.o",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionViewModel.swift.o",
         "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/ContentView.swift.o"
       ],
       "otherArguments" : [
@@ -97,6 +107,7 @@
         "-entry-point-function-name",
         "-Xfrontend",
         "AcOrDiOn_main",
+        "-color-diagnostics",
         "-swift-version",
         "5",
         "-plugin-path",
@@ -155,11 +166,19 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/BellowsModel.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/HingeMonitor.swift.o"
         },
         {
           "kind" : "file",
           "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/VelocityCalculator.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionViewModel.swift.o"
         },
         {
           "kind" : "file",
@@ -177,8 +196,10 @@
         "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Audio/MIDIRecorder.swift",
         "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/KeyboardMonitor.swift",
         "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/NoteMapper.swift",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Models/BellowsModel.swift",
         "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/HingeMonitor.swift",
         "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/VelocityCalculator.swift",
+        "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/ViewModels/AccordionViewModel.swift",
         "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Views/ContentView.swift"
       ],
       "tempsPath" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build",
@@ -201,8 +222,10 @@
       "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Audio/MIDIRecorder.swift",
       "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/KeyboardMonitor.swift",
       "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Input/NoteMapper.swift",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Models/BellowsModel.swift",
       "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/HingeMonitor.swift",
       "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/VelocityCalculator.swift",
+      "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/ViewModels/AccordionViewModel.swift",
       "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Views/ContentView.swift",
       "-I",
       "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/Modules",
@@ -226,6 +249,7 @@
       "-entry-point-function-name",
       "-Xfrontend",
       "AcOrDiOn_main",
+      "-color-diagnostics",
       "-swift-version",
       "5",
       "-plugin-path",
@@ -323,11 +347,19 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Models/BellowsModel.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/HingeMonitor.swift"
         },
         {
           "kind" : "file",
           "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/Sensors/VelocityCalculator.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/AcOrDiOn/ViewModels/AccordionViewModel.swift"
         },
         {
           "kind" : "file",
@@ -349,7 +381,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AccordionViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/AudioEngine.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/satounatsuki/Github_projects/AcOrDiOn/.build/arm64-apple-macosx/debug/AcOrDiOn.build/BellowsModel.swift.o"
         },
         {
           "kind" : "file",

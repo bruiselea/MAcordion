@@ -92,4 +92,6 @@ class AppState: ObservableObject {
     @Published var activeNotes: Set<UInt8> = []
     @Published var isRecording: Bool = false
     @Published var isSustainOn: Bool = false
+    @Published var pressure: Double = 0.5   // Bellows pressure
+    @Published var isAirValveOpen: Bool = false // Spacebar state
 }
