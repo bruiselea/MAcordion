@@ -95,13 +95,7 @@ class AudioEngine: ObservableObject {
             isReady = true
             print("AudioEngine: Ready! isReady = \(isReady)")
             
-            // Test sound
-            print("AudioEngine: Playing test note...")
-            sampler.startNote(60, withVelocity: 100, onChannel: 0)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                sampler.stopNote(60, onChannel: 0)
-                print("AudioEngine: Test note stopped")
-            }
+            // Test sound removed for release
             
         } catch {
             print("AudioEngine: Error starting engine: \(error)")

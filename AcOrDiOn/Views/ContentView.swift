@@ -27,18 +27,7 @@ struct ContentView: View {
                     .shadow(color: .black.opacity(0.8), radius: 4, x: 0, y: 4)
                     .padding(.top, 10)
                 
-                // Keyboard status indicator
-                Text("✓ Keyboard Active - Play with A,S,D,F,G,H,J,K,L")
-                    .font(.system(size: 14, weight: .medium, design: .serif))
-                    .foregroundColor(Color(hex: "FFF7D6"))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
-                    .background(Color.black.opacity(0.4))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "D4AF37").opacity(0.5), lineWidth: 1)
-                    )
+                // Keyboard status indicator removed for clean UI
                 
                 HStack(alignment: .top, spacing: 40) {
                     // Left Side: Controls & Registers (Accordion Bass Side)
