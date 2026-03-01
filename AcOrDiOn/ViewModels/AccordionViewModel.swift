@@ -8,7 +8,6 @@ class AccordionViewModel: ObservableObject {
     // Core Engine Components
     let hingeMonitor = HingeMonitor()
     let audioEngine = AudioEngine()
-    let midiRecorder = MIDIRecorder()
     let bellowsModel = BellowsModel()
     
     // Helpers
@@ -157,16 +156,6 @@ class AccordionViewModel: ObservableObject {
         case 49: // Space (Air Valve)
             appState.isAirValveOpen = true
             return
-        case 36: // Enter (Looper Play/Stop)
-            if midiRecorder.isPlaying {
-                midiRecorder.stopPlayback()
-            } else {
-                midiRecorder.startPlayback(audioEngine: audioEngine, loop: true)
-            }
-            return
-        case 51: // Backspace (Record)
-            let _ = toggleRecording()
-            return
         default:
             break
         }
@@ -192,11 +181,6 @@ class AccordionViewModel: ObservableObject {
             return
         }
         
-        // Control keys where release doesn't matter much
-        if keyCode == 36 || keyCode == 51 { // Enter or Backspace
-            return
-        }
-        
         // Note release
         physicallyPressedKeys.remove(keyCode)
         
@@ -209,20 +193,6 @@ class AccordionViewModel: ObservableObject {
                 appState.activeNotes.remove(note)
             }
             updateActiveNoteNames()
-        }
-    }
-    
-    // MARK: - Recoding
-    
-    func toggleRecording() -> URL? {
-        if midiRecorder.isRecording {
-            midiRecorder.stopRecording()
-            appState.isRecording = false
-            return midiRecorder.exportToJSON()
-        } else {
-            midiRecorder.startRecording()
-            appState.isRecording = true
-            return nil
         }
     }
     

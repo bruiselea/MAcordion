@@ -51,32 +51,6 @@ struct ContentView: View {
                         VStack(spacing: 15) {
                             RegisterButton(label: "SUSTAIN", isActive: viewModel.appState.isSustainOn)
                             RegisterButton(label: "AIR VALVE", isActive: viewModel.appState.isAirValveOpen)
-                            
-                            Divider().background(Color(hex: "D4AF37").opacity(0.3)).padding(.vertical, 5)
-                            
-                            Button(action: toggleRecording) {
-                                RegisterButtonStyle(
-                                    label: viewModel.appState.isRecording ? "REC..." : "RECORD",
-                                    isActive: viewModel.appState.isRecording,
-                                    activeColor: Color(hex: "C41E3A") // Crimson
-                                )
-                            }.buttonStyle(.plain)
-                            
-                            Button(action: {
-                                if viewModel.midiRecorder.isPlaying {
-                                    viewModel.midiRecorder.stopPlayback()
-                                } else {
-                                    viewModel.midiRecorder.startPlayback(audioEngine: viewModel.audioEngine, loop: true)
-                                }
-                            }) {
-                                RegisterButtonStyle(
-                                    label: viewModel.appState.isRecording ? "PLAYING" : "LOOP",
-                                    isActive: viewModel.midiRecorder.isPlaying,
-                                    activeColor: Color(hex: "50C878") // Emerald
-                                )
-                            }
-                            .disabled(viewModel.midiRecorder.recordedEvents.isEmpty)
-                            .buttonStyle(.plain)
                         }
                         .padding(20)
                         .background(
@@ -136,12 +110,6 @@ struct ContentView: View {
     
     private func cleanup() {
         viewModel.stop()
-    }
-    
-    private func toggleRecording() {
-        if let url = viewModel.toggleRecording() {
-            NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: "")
-        }
     }
 }
 
@@ -349,8 +317,7 @@ struct KeyboardHintView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("CONTROLS").font(.system(size: 9, weight: .bold, design: .serif)).foregroundColor(Color(hex: "D4AF37"))
                 Text("Z / X: Octave Shift   Tab: Sustain").font(.system(.caption, design: .monospaced))
-                Text("Space: Air Valve      Del: Record").font(.system(.caption, design: .monospaced))
-                Text("Enter: Loop").font(.system(.caption, design: .monospaced))
+                Text("Space: Air Valve").font(.system(.caption, design: .monospaced))
             }
         }
         .foregroundColor(Color(hex: "FFF7D6").opacity(0.7))
