@@ -4,6 +4,7 @@ import AppKit
 struct ContentView: View {
     @StateObject private var viewModel = AccordionViewModel()
     @EnvironmentObject var keyboardHandler: KeyboardHandler
+    @AppStorage("hasSeenHowToPlay") private var hasSeenHowToPlay: Bool = false
     
     var body: some View {
         ZStack {
@@ -79,6 +80,17 @@ struct ContentView: View {
                 }
             }
             .padding(40)
+            .blur(radius: hasSeenHowToPlay ? 0 : 10)
+            
+            // Onboarding Overlay
+            if !hasSeenHowToPlay {
+                Color.black.opacity(0.6).ignoresSafeArea()
+                HowToPlayView {
+                    withAnimation {
+                        hasSeenHowToPlay = true
+                    }
+                }
+            }
         }
         .onAppear(perform: setup)
         .onDisappear(perform: cleanup)
@@ -330,5 +342,58 @@ extension Color {
         default: (a, r, g, b) = (255, 0, 0, 0)
         }
         self.init(.sRGB, red: Double(r) / 255, green: Double(g) / 255, blue: Double(b) / 255, opacity: Double(a) / 255)
+    }
+}
+
+// MARK: - Onboarding
+struct HowToPlayView: View {
+    var onDismiss: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("How to Play")
+                .font(.system(size: 32, weight: .bold, design: .serif))
+                .foregroundColor(Color(hex: "F3E5AB"))
+            
+            if let nsImage = NSImage(named: "how_to_play") ?? NSImage(contentsOfFile: Bundle.main.path(forResource: "how_to_play", ofType: "png") ?? "") {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxHeight: 400)
+                    .cornerRadius(12)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "D4AF37").opacity(0.5), lineWidth: 2))
+                    .shadow(color: .black.opacity(0.8), radius: 10, x: 0, y: 10)
+            } else {
+                Text("Illustration missing. Please ensure 'how_to_play.png' is in Resources.")
+                    .foregroundColor(.red)
+            }
+            
+            Text("Open and close the laptop lid (hinge) like a real accordion bellows to pump air.\nPress the keyboard keys to play notes while air is flowing!")
+                .font(.system(size: 14, weight: .medium, design: .serif))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+            
+            Button(action: onDismiss) {
+                Text("Start Playing")
+                    .font(.system(size: 16, weight: .bold, design: .serif))
+                    .foregroundColor(Color(hex: "1A0508"))
+                    .padding(.horizontal, 30)
+                    .padding(.vertical, 12)
+                    .background(LinearGradient(colors: [Color(hex: "F3E5AB"), Color(hex: "D4AF37")], startPoint: .top, endPoint: .bottom))
+                    .cornerRadius(25)
+                    .shadow(radius: 5)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 10)
+        }
+        .padding(40)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(hex: "2A080C"))
+                .shadow(color: .black.opacity(0.8), radius: 20, x: 0, y: 15)
+        )
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color(hex: "D4AF37").opacity(0.6), lineWidth: 1))
+        .frame(maxWidth: 600)
     }
 }
