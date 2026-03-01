@@ -73,10 +73,9 @@ class BellowsModel: ObservableObject {
     /// Calculate the effective "expression" or volume based on pressure
     /// - Returns: A value from 0.0 to 1.0 representing how loud it should be
     func currentExpression() -> Double {
-        // If the air valve is open, most air escapes through the valve, not the reeds
-        if isAirValveOpen {
-            return 0.0
-        }
+        // If the air valve is open, most air escapes through the valve, not the reeds.
+        // It drastically reduces volume, but is not an instant mute.
+        let valveMultiplier: Double = isAirValveOpen ? 0.2 : 1.0
         
         // If there's no pressure, there's no sound
         if pressure <= 0.05 {
@@ -86,6 +85,6 @@ class BellowsModel: ObservableObject {
         // Pressure translates to expression/volume.
         // We use a slight curve to make it feel more natural.
         let normalizedPressure = (pressure - 0.05) / 0.95
-        return pow(normalizedPressure, 0.7)
+        return pow(normalizedPressure, 0.7) * valveMultiplier
     }
 }

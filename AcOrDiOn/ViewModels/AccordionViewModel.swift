@@ -15,6 +15,9 @@ class AccordionViewModel: ObservableObject {
     private let noteMapper = NoteMapper()
     private let velocityCalculator = VelocityCalculator()
     
+    // Track keys that are currently physically pressed down
+    private var physicallyPressedKeys: Set<UInt16> = []
+    
     // Derived UI State
     @Published var activeNoteNames: [String] = []
     
@@ -66,8 +69,25 @@ class AccordionViewModel: ObservableObject {
         appState.pressure = bellowsModel.pressure
         
         // Calculate final audio parameters
-        let expressionNode = bellowsModel.currentExpression()
-        let midiVelocity = UInt8(expressionNode * 127)
+        // The user specifically wants volume to depend on the *amount of angle change* (velocity).
+        // Sound should stop if the angle is not changing (velocity == 0).
+        var finalVelocity = Double(velocity)
+        
+        // Air valve reduces volume drastically but is not an instant mute
+        if appState.isAirValveOpen {
+            finalVelocity *= 0.2
+        }
+        
+        // Actual air pressure also limits the maximum possible volume
+        if bellowsModel.pressure <= 0.05 {
+            finalVelocity = 0
+        } else {
+            let pressureFactor = (bellowsModel.pressure - 0.05) / 0.95
+            // Soft curve so it remains audible until pressure is quite low
+            finalVelocity *= pow(pressureFactor, 0.5) 
+        }
+        
+        let midiVelocity = UInt8(min(127.0, max(0.0, finalVelocity)))
         
         // Apply parameters to audio engine
         audioEngine.updateVelocity(midiVelocity)
@@ -88,6 +108,21 @@ class AccordionViewModel: ObservableObject {
         case 48: // Tab (Sustain)
             appState.isSustainOn.toggle()
             audioEngine.setSustain(appState.isSustainOn)
+            
+            // If sustain was just turned off, we need to release any notes 
+            // that are ringing but whose keys are no longer physically held down.
+            if !appState.isSustainOn {
+                let activeMidiNotes = appState.activeNotes
+                for note in activeMidiNotes {
+                    // Check if this MIDI note corresponds to any currently held key
+                    let isHeld = physicallyPressedKeys.contains(where: { keyCodeToMidiNote($0) == note })
+                    if !isHeld {
+                        audioEngine.noteOff(note)
+                        appState.activeNotes.remove(note)
+                    }
+                }
+                updateActiveNoteNames()
+            }
             return
         case 49: // Space (Air Valve)
             appState.isAirValveOpen = true
@@ -104,6 +139,8 @@ class AccordionViewModel: ObservableObject {
         }
         
         // Note keys
+        physicallyPressedKeys.insert(keyCode)
+        
         if let midiNote = keyCodeToMidiNote(keyCode) {
             let octaveOffset = (appState.currentOctave - 4) * 12
             let note = UInt8(max(0, min(127, Int(midiNote) + octaveOffset)))
@@ -128,14 +165,16 @@ class AccordionViewModel: ObservableObject {
         }
         
         // Note release
+        physicallyPressedKeys.remove(keyCode)
+        
         if let midiNote = keyCodeToMidiNote(keyCode) {
             let octaveOffset = (appState.currentOctave - 4) * 12
             let note = UInt8(max(0, min(127, Int(midiNote) + octaveOffset)))
             
             if !appState.isSustainOn {
                 audioEngine.noteOff(note)
+                appState.activeNotes.remove(note)
             }
-            appState.activeNotes.remove(note)
             updateActiveNoteNames()
         }
     }

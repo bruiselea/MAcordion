@@ -9,7 +9,7 @@ struct AcOrDiOnApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView(keyboardHandler: keyboardHandler)
+            ContentView()
                 .environmentObject(appState)
                 .environmentObject(keyboardHandler)
                 .frame(minWidth: 600, minHeight: 400)
