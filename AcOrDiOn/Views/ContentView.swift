@@ -349,7 +349,8 @@ struct KeyboardHintView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("CONTROLS").font(.system(size: 9, weight: .bold, design: .serif)).foregroundColor(Color(hex: "D4AF37"))
                 Text("Z / X: Octave Shift   Tab: Sustain").font(.system(.caption, design: .monospaced))
-                Text("Space: Air Valve      Enter: Loop").font(.system(.caption, design: .monospaced))
+                Text("Space: Air Valve      Del: Record").font(.system(.caption, design: .monospaced))
+                Text("Enter: Loop").font(.system(.caption, design: .monospaced))
             }
         }
         .foregroundColor(Color(hex: "FFF7D6").opacity(0.7))

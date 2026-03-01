@@ -164,6 +164,9 @@ class AccordionViewModel: ObservableObject {
                 midiRecorder.startPlayback(audioEngine: audioEngine, loop: true)
             }
             return
+        case 51: // Backspace (Record)
+            let _ = toggleRecording()
+            return
         default:
             break
         }
@@ -190,7 +193,7 @@ class AccordionViewModel: ObservableObject {
         }
         
         // Control keys where release doesn't matter much
-        if keyCode == 36 { // Enter
+        if keyCode == 36 || keyCode == 51 { // Enter or Backspace
             return
         }
         
