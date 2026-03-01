@@ -92,6 +92,36 @@ class AccordionViewModel: ObservableObject {
         // Apply parameters to audio engine
         audioEngine.updateVelocity(midiVelocity)
         audioEngine.updateFilter(pressure: appState.pressure)
+        
+        // --- Note Release Logic on Hinge Stop ---
+        // A real accordion stops making sound immediately when the bellows stop moving.
+        // If our velocity dropped to 0, and sustain is OFF, we should release all notes
+        // that are not physically held down, and even if they are held down, 
+        // the 0 velocity will silence them anyway. 
+        if midiVelocity == 0 && !appState.isSustainOn {
+            let activeMidiNotes = appState.activeNotes
+            var notesRemoved = false
+            for note in activeMidiNotes {
+                // If the key is not physically held, release it entirely from the engine
+                let isHeld = physicallyPressedKeys.contains(where: { 
+                    if let mapped = keyCodeToMidiNote($0) {
+                        let octaveOffset = (appState.currentOctave - 4) * 12
+                        let fullNote = UInt8(max(0, min(127, Int(mapped) + octaveOffset)))
+                        return fullNote == note
+                    }
+                    return false
+                })
+                
+                if !isHeld {
+                    audioEngine.noteOff(note)
+                    appState.activeNotes.remove(note)
+                    notesRemoved = true
+                }
+            }
+            if notesRemoved {
+                updateActiveNoteNames()
+            }
+        }
     }
     
     // MARK: - Key Handling

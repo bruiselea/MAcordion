@@ -4,7 +4,7 @@ import Foundation
 class VelocityCalculator {
     // Thresholds for velocity mapping (degrees per second)
     private let minVelocityThreshold: Double = 1.0   // Smooth start
-    private let maxVelocityThreshold: Double = 40.0  // Wide dynamic range for slow strokes
+    private let maxVelocityThreshold: Double = 120.0 // Requires much faster, larger movements to reach max volume
     
     // MIDI velocity ranges
     private let minVelocity: Int = 20
@@ -29,9 +29,9 @@ class VelocityCalculator {
             // Normalize movement speed between 0.0 and 1.0
             let normalizedSpeed = min(1.0, (smoothedVelocity - minVelocityThreshold) / (maxVelocityThreshold - minVelocityThreshold))
             
-            // Apply a broader curve (pow 0.8) to make the volume change smoother and less abrupt.
-            // This gives a nice linear-like feel but retains a slight boost for low-speed expression.
-            let curve = pow(normalizedSpeed, 0.8)
+            // Apply an exponential curve (pow 1.2). This keeps the volume lower at slow-to-medium
+            // speeds, requiring a genuinely fast and large movement to hit the maximum MIDI velocity.
+            let curve = pow(normalizedSpeed, 1.2)
             
             velocity = minVelocity + Int(curve * Double(maxVelocity - minVelocity))
         }

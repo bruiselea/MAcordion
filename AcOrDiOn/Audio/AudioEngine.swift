@@ -43,12 +43,18 @@ class AudioEngine: ObservableObject {
         filterParams.bandwidth = 1.0     // 1 octave
         filterParams.bypass = false
         
+        // Boost overall volume significantly (+24dB on the EQ side)
+        eq.globalGain = 24.0
+        
         engine.attach(sampler)
         engine.attach(eq)
         
         // Connect nodes: Sampler -> EQ -> MainMixer
         engine.connect(sampler, to: eq, format: nil)
         engine.connect(eq, to: engine.mainMixerNode, format: nil)
+        
+        // Also boost the final output mixer volume (default is 1.0)
+        engine.mainMixerNode.outputVolume = 2.0
         
         do {
             try engine.start()
