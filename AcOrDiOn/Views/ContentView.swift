@@ -92,6 +92,9 @@ struct ContentView: View {
                     }
                     
                     // Center: Bellows Visualizer
+                    // TODO: Replace this with a realistic accordion animation later.
+                    // For now, it is hidden for the release.
+                    /*
                     VStack {
                         Text("BELLOWS")
                             .font(.system(size: 12, weight: .black, design: .serif))
@@ -101,6 +104,7 @@ struct ContentView: View {
                         
                         HingeAngleView(angle: viewModel.appState.currentAngle, pressure: viewModel.appState.pressure)
                     }
+                    */
                 }
                 
                 Spacer()
