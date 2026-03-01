@@ -168,10 +168,9 @@ struct HingeAngleView: View {
                 .shadow(color: Color(hex: "D4AF37").opacity(0.5), radius: 8, x: 0, y: 0)
             
             VStack(spacing: 0) {
-                Text("\(Int(angle))°")
-                    .font(.system(size: 52, weight: .light, design: .serif))
-                    .foregroundColor(Color(hex: "FFF7D6"))
-                    .shadow(color: .black, radius: 2, x: 0, y: 2)
+                // Angle display removed for release
+                Spacer()
+                    .frame(height: 52)
                 
                 // Bellows Pressure indicator (looks like an air gauge)
                 VStack(spacing: 4) {
