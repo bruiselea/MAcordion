@@ -206,14 +206,14 @@ struct HingeAngleView: View {
 struct PianoKeysView: View {
     let activeNotes: Set<UInt8>
     
-    // Restricted representation for visuals up to 'So' (C4 to G4)
-    let whiteKeys: [UInt8] = [60, 62, 64, 65, 67] // C, D, E, F, G
+    // 1-octave representation (12 keys: 7 white, 5 black) from C4 to B4
+    let whiteKeys: [UInt8] = [60, 62, 64, 65, 67, 69, 71] // C, D, E, F, G, A, B
     
     // Position represents the index of the white key it follows.
     // e.g., 1.0 means it's right after white key index 0 (C), centered between 0 and 1.
     let blackKeys: [UInt8: CGFloat] = [
         61: 1.0, 63: 2.0, // C#, D#
-        66: 4.0           // F#
+        66: 4.0, 68: 5.0, 70: 6.0 // F#, G#, A#
     ]
     
     let keyWidth: CGFloat = 40
