@@ -1,0 +1,28 @@
+# Build artifacts
+.build/
+DerivedData/
+
+# Xcode
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+
+# SwiftPM
+.swiftpm/
+
+# App bundles
+*.app/
+
+# Misc
+app_log.txt
