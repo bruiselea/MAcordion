@@ -33,9 +33,19 @@ class AccordionViewModel: ObservableObject {
     
     // MARK: - Lifecycle
     
+    /// Whether hinge sensor is available (keyboard-only mode if false)
+    var isKeyboardOnlyMode: Bool {
+        return !hingeMonitor.isSensorAvailable
+    }
+    
     func start() {
         print("AccordionViewModel: Starting")
-        hingeMonitor.startMonitoring()
+        
+        if isKeyboardOnlyMode {
+            print("AccordionViewModel: Keyboard-only mode (no hinge sensor)")
+        } else {
+            hingeMonitor.startMonitoring()
+        }
         
         // Main update loop (30Hz)
         updateTimer = Timer.scheduledTimer(withTimeInterval: 1.0/30.0, repeats: true) { [weak self] _ in
@@ -54,6 +64,17 @@ class AccordionViewModel: ObservableObject {
     // MARK: - Core Update Loop
     
     private func update() {
+        if isKeyboardOnlyMode {
+            // Keyboard-only mode: fixed pressure and velocity
+            appState.pressure = 0.8
+            appState.velocity = 100
+            audioEngine.updateVelocity(100)
+            audioEngine.updateFilter(pressure: 0.8)
+            return
+        }
+        
+        // --- Hinge sensor mode below ---
+        
         // Update raw sensor data to state
         appState.currentAngle = hingeMonitor.currentAngle
         
@@ -68,8 +89,6 @@ class AccordionViewModel: ObservableObject {
         appState.pressure = bellowsModel.pressure
         
         // Calculate final audio parameters
-        // The user specifically wants volume to depend on the *amount of angle change* (velocity).
-        // Sound should stop if the angle is not changing (velocity == 0).
         var finalVelocity = Double(velocity)
         
         // Air valve reduces volume drastically but is not an instant mute
@@ -82,7 +101,6 @@ class AccordionViewModel: ObservableObject {
             finalVelocity = 0
         } else {
             let pressureFactor = (bellowsModel.pressure - 0.05) / 0.95
-            // Soft curve so it remains audible until pressure is quite low
             finalVelocity *= pow(pressureFactor, 0.5) 
         }
         
@@ -166,9 +184,9 @@ class AccordionViewModel: ObservableObject {
         if let midiNote = keyCodeToMidiNote(keyCode) {
             let octaveOffset = (appState.currentOctave - 4) * 12
             let note = UInt8(max(0, min(127, Int(midiNote) + octaveOffset)))
-            let midiVelocity = UInt8(bellowsModel.currentExpression() * 127)
+            let midiVelocity: UInt8 = isKeyboardOnlyMode ? 100 : UInt8(bellowsModel.currentExpression() * 127)
             
-            audioEngine.noteOn(note, velocity: midiVelocity)
+            audioEngine.noteOn(note, velocity: max(midiVelocity, 1))  // Always at least velocity 1
             appState.activeNotes.insert(note)
             updateActiveNoteNames()
         }
