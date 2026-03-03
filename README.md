@@ -26,7 +26,9 @@ By opening and closing your Mac's screen, you control the airflow and dynamics o
 
 Since MAcordion requires deep hardware access to the lid angle sensor (IOHIDManager), it cannot run under the strict macOS App Sandbox required by the Mac App Store. 
 
-1. Download the latest `MAcordion.dmg` from the [Releases](#) page.
+### 📥 [>>> Download MAcordion.dmg <<<](https://github.com/bruiselea/MAcordion/releases/latest)
+
+1. Download the latest `MAcordion.dmg` from the [Releases](https://github.com/bruiselea/MAcordion/releases) page.
 2. Open the DMG and drag **MAcordion.app** into your `/Applications` folder.
 3. Upon first launch, macOS may block the app because it is from an unidentified developer. 
     - Go to **System Settings > Privacy & Security**
