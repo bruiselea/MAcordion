@@ -1,3 +1,8 @@
+# ⚠️ WARNING: USE AT YOUR OWN RISK ⚠️
+> **This application directly accesses your MacBook's hardware sensors (lid angle / hinge). Any damage to your device caused by using this software is YOUR responsibility. The developers assume NO liability whatsoever. By using this software, you agree that you do so entirely at your own risk.**
+
+---
+
 # MAcordion 🪗
 *Vibe coded by bruiselea*
 
