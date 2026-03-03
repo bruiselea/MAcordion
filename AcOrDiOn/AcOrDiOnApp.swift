@@ -22,6 +22,7 @@ struct AcOrDiOnApp: App {
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(.regular)  // Treat as foreground app (Dock icon + keyboard focus)
         NSApp.activate(ignoringOtherApps: true)
         
         // Set up global key event monitor (works even when other views have focus)
