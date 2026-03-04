@@ -59,14 +59,21 @@ Requirements:
    ```
    Or open `Package.swift` in Xcode and press `Cmd + R`.
 
-## Hinge Sensor (Optional)
+## Hardware & Software Requirements
 
-The bellows feature (dynamic volume via lid angle) requires:
+The core "Accordion" feature (dynamic volume control via screen angle) requires a high-resolution Lid Angle Sensor.
+
+**Minimum Hardware Requirements for full features:**
+- Any Apple Silicon MacBook (M1, M2, M3, M4 - Air or Pro)
+- Late 2019 Intel MacBook Pro (16-inch or newer)
+
+*(Older MacBooks from 2018 or earlier lack this sensor hardware.)*
+
+**Software Requirements (for Hinge Sensor):**
 - Python 3 installed (`/usr/bin/python3`, `/opt/homebrew/bin/python3`, etc.)
 - `pybooklid` package: `pip3 install pybooklid`
 
-Without these, the app automatically runs in **Keyboard-Only Mode** — all keys produce sound at a fixed volume. Install `pybooklid` to unlock the full accordion experience!
-
+If your Mac does not meet these hardware or software requirements, the app will automatically run in **Keyboard-Only Mode** — allowing you to play notes at a fixed volume without closing/opening the screen!
 ## Architecture
 MAcordion is built entirely in Swift and SwiftUI.
 - **AudioEngine**: `AVAudioEngine` based sampler utilizing standard DLS/SoundFonts for classic accordion patches.
