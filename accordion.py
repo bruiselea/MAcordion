@@ -136,6 +136,8 @@ class AccordionApp:
         self.angle_history = [90.0] * 3  # Reduced from 10 to 3
         self.angular_velocity = 0.0
         self.volume = 0.5
+        self.last_motion_time = time.time()
+        self.idle_timeout = 0.6  # seconds without motion before we consider idle
         
         pygame.mixer.set_num_channels(32)
         
@@ -171,43 +173,90 @@ class AccordionApp:
                 delta = abs(smoothed - self.current_angle)
                 velocity = delta * 15  # Increased sensitivity
                 
+                # Deadzone and hysteresis for tiny motions
+                if velocity < 0.25:
+                    velocity = 0.0
+                
                 # Lighter velocity smoothing (0.5/0.5 instead of 0.85/0.15)
                 self.angular_velocity = self.angular_velocity * 0.5 + velocity * 0.5
                 self.angular_velocity = min(50, self.angular_velocity)
+
+                if self.angular_velocity > 0.35:
+                    self.last_motion_time = time.time()
                 
-                if self.angular_velocity < 0.5:
-                    target = 0.05
-                elif self.angular_velocity < 2:
-                    target = 0.1 + (self.angular_velocity - 0.5) * 0.25
-                elif self.angular_velocity < 8:
-                    target = 0.45 + (self.angular_velocity - 2) * 0.08
+                # Map velocity to target volume with softer curve
+                if self.angular_velocity <= 0.35:
+                    target = 0.0
+                elif self.angular_velocity < 2.0:
+                    # gentle ramp up from 0 to ~0.35
+                    t = (self.angular_velocity - 0.35) / (2.0 - 0.35)
+                    target = 0.35 * t
+                elif self.angular_velocity < 8.0:
+                    # mid range up to ~0.85
+                    t = (self.angular_velocity - 2.0) / (8.0 - 2.0)
+                    target = 0.35 + 0.5 * t
                 else:
-                    target = 0.95
+                    target = 1.0
                 
-                # Much lighter volume smoothing (0.3/0.7 instead of 0.7/0.3)
-                self.volume = self.volume * 0.3 + target * 0.7
+                # Volume smoothing with asymmetric response (faster attack, slower release)
+                if target > self.volume:
+                    alpha = 0.6  # attack
+                else:
+                    alpha = 0.25  # release
+                self.volume = (1 - alpha) * self.volume + alpha * target
                 self.volume = max(0.0, min(1.0, self.volume))
                 
                 self.current_angle = smoothed
             except:
                 pass
             
+            # Idle handling: if no meaningful motion for a while, decay volume to 0
+            if time.time() - self.last_motion_time > self.idle_timeout:
+                # slower release to zero when idle
+                self.volume = max(0.0, self.volume * 0.90)
+                # also slowly bleed angular velocity to zero
+                self.angular_velocity = max(0.0, self.angular_velocity * 0.85)
+            
             time.sleep(0.015)  # Faster polling: 66Hz instead of 33Hz
     
     def update_playing_volumes(self):
         """Update volume for all playing notes in real-time"""
-        actual_vol = max(0.05, self.volume)
-        
+        actual_vol = max(0.0, self.volume)
+        very_quiet = actual_vol < 0.01
+
         # Update each channel's volume
         for note, channel in list(self.channels.items()):
             if channel.get_busy():
                 # Use both sound volume and channel volume for redundancy
                 self.sounds[note].set_volume(actual_vol) # Set sound volume
                 channel.set_volume(actual_vol, actual_vol) # Set channel volume
-                
-        # Also set the global volume as backup
-        # This line was removed as it's redundant and can interfere with individual channel volumes.
-        # pygame.mixer.set_num_channels(32) # Ensure channels exist
+                # Force-stop channels when effectively silent to avoid lingering
+                if very_quiet:
+                    try:
+                        channel.stop()
+                    except Exception:
+                        pass
+                    if note in self.channels:
+                        try:
+                            del self.channels[note]
+                        except KeyError:
+                            pass
+            else:
+                # Channel finished playing; cleanup mapping if exists
+                if note in self.channels:
+                    try:
+                        del self.channels[note]
+                    except KeyError:
+                        pass
+
+        # Secondary sweep to ensure no stale channels remain
+        for note in list(self.channels.keys()):
+            ch = self.channels.get(note)
+            if ch and not ch.get_busy():
+                try:
+                    del self.channels[note]
+                except KeyError:
+                    pass
     
     def note_on(self, note_offset):
         midi_note = 60 + (self.octave - 4) * 12 + note_offset
@@ -219,7 +268,7 @@ class AccordionApp:
             if midi_note in self.sounds:
                 channel = pygame.mixer.find_channel(True)
                 if channel:
-                    vol = max(0.1, self.volume)
+                    vol = max(0.0, self.volume)
                     channel.set_volume(vol, vol)
                     channel.play(self.sounds[midi_note], loops=-1)
                     self.channels[midi_note] = channel
@@ -265,6 +314,18 @@ class AccordionApp:
                     self.octave = min(6, self.octave + 1)
                 elif key == pygame.K_TAB:
                     self.sustain = not self.sustain
+                    # When turning sustain OFF, immediately stop any channels for notes not currently active
+                    if not self.sustain:
+                        for note, channel in list(self.channels.items()):
+                            if note not in self.active_notes:
+                                try:
+                                    channel.stop()
+                                except Exception:
+                                    pass
+                                try:
+                                    del self.channels[note]
+                                except KeyError:
+                                    pass
                     if not self.sustain:
                         self.all_notes_off()
                 elif key == pygame.K_ESCAPE:
@@ -357,6 +418,20 @@ class AccordionApp:
         while self.running:
             self.handle_events()
             self.update_playing_volumes()
+            # Auto stop notes when effectively silent and idle
+            if self.volume < 0.01 and self.angular_velocity < 0.2 and self.active_notes and (time.time() - self.last_motion_time > self.idle_timeout):
+                self.all_notes_off()
+            # Hard cleanup for any lingering channels when silent and idle
+            if self.volume < 0.01 and self.angular_velocity < 0.2 and (time.time() - self.last_motion_time > self.idle_timeout):
+                for note, ch in list(self.channels.items()):
+                    try:
+                        ch.stop()
+                    except Exception:
+                        pass
+                    try:
+                        del self.channels[note]
+                    except KeyError:
+                        pass
             self.draw()
             self.clock.tick(FPS)
         

@@ -2,178 +2,267 @@ import Foundation
 import AVFoundation
 import AudioToolbox
 
-/// Audio engine for playing accordion sounds
+/// Audio engine for playing accordion sounds.
+///
+/// Uses a self-contained additive synth (two detuned sawtooth oscillators
+/// per voice with an AR envelope) routed through a low-pass filter. This
+/// avoids depending on macOS's `gs_instruments.dls` General MIDI bank,
+/// which has been removed from recent macOS versions and was causing
+/// silent playback on those systems.
 class AudioEngine: ObservableObject {
     private var audioEngine: AVAudioEngine?
-    private var sampler: AVAudioUnitSampler?
+    private var sourceNode: AVAudioSourceNode?
     private var eqFilter: AVAudioUnitEQ?
-    
+
     @Published var isReady: Bool = false
-    
-    // Active notes with their velocities
-    private var activeNotes: [UInt8: UInt8] = [:]  // note -> velocity
-    
-    // Accordion MIDI program (General MIDI: 21 = Accordion)
-    private let accordionProgram: UInt8 = 21
-    
+
+    // MARK: - Synth State
+
+    private struct Voice {
+        var note: UInt8
+        var velocity: Float        // 0…1, scaled from MIDI velocity
+        var freq1: Float
+        var freq2: Float           // detuned for chorus/beating
+        var phase1: Float = 0
+        var phase2: Float = 0
+        var envelope: Float = 0    // current amplitude 0…1
+        var isReleasing: Bool = false
+        var sustainedAfterKeyUp: Bool = false
+    }
+
+    private var voices: [UInt8: Voice] = [:]
+    private var expressionLevel: Float = 1.0
+    private var sustainPedalDown: Bool = false
+    private let stateLock = NSLock()
+
+    private var sampleRate: Float = 44100
+
+    // Envelope rates per second (higher = faster).
+    private let attackPerSec: Float = 35    // ~28ms 0→1
+    private let releasePerSec: Float = 9    // ~110ms 1→0
+    private let masterGain: Float = 0.18    // headroom for polyphony
+
     init() {
         setupAudioEngine()
     }
-    
+
     deinit {
         stop()
     }
-    
+
     private func setupAudioEngine() {
-        print("AudioEngine: Setting up...")
-        
+        print("AudioEngine: Setting up additive synth")
+
         audioEngine = AVAudioEngine()
-        sampler = AVAudioUnitSampler()
+        guard let engine = audioEngine else { return }
+
+        let mainMixer = engine.mainMixerNode
+        let outputFormat = mainMixer.outputFormat(forBus: 0)
+        sampleRate = Float(outputFormat.sampleRate)
+
+        // Low-pass filter, frequency driven by bellows pressure.
         eqFilter = AVAudioUnitEQ(numberOfBands: 1)
-        
-        guard let engine = audioEngine, let sampler = sampler, let eq = eqFilter else {
-            print("AudioEngine: Failed to create audio engine components")
-            return
+        guard let eq = eqFilter else { return }
+        let band = eq.bands[0]
+        band.filterType = .lowPass
+        band.frequency = 20000
+        band.bandwidth = 1.0
+        band.bypass = false
+        eq.globalGain = 12.0
+
+        // Custom render block — generates audio entirely in-process.
+        sourceNode = AVAudioSourceNode { [weak self] _, _, frameCount, abl -> OSStatus in
+            guard let self = self else { return noErr }
+            return self.renderAudio(frameCount: frameCount, abl: abl)
         }
-        
-        // Setup Lowpass filter
-        let filterParams = eq.bands[0]
-        filterParams.filterType = .lowPass
-        filterParams.frequency = 20000.0 // Start wide open
-        filterParams.bandwidth = 1.0     // 1 octave
-        filterParams.bypass = false
-        
-        // Boost overall volume significantly (+24dB on the EQ side)
-        eq.globalGain = 24.0
-        
-        engine.attach(sampler)
+        guard let source = sourceNode else { return }
+
+        engine.attach(source)
         engine.attach(eq)
-        
-        // Connect nodes: Sampler -> EQ -> MainMixer
-        engine.connect(sampler, to: eq, format: nil)
-        engine.connect(eq, to: engine.mainMixerNode, format: nil)
-        
-        // Also boost the final output mixer volume (default is 1.0)
-        engine.mainMixerNode.outputVolume = 2.0
-        
+        engine.connect(source, to: eq, format: outputFormat)
+        engine.connect(eq, to: mainMixer, format: outputFormat)
+        mainMixer.outputVolume = 1.0
+
         do {
             try engine.start()
-            print("AudioEngine: Engine started")
-            
-            // Try multiple SoundFont/DLS paths
-            let soundBankPaths = [
-                "/System/Library/Components/CoreAudio.component/Contents/Resources/gs_instruments.dls",
-                "/Library/Audio/Sounds/Banks/gs_instruments.dls",
-                "/System/Library/Sounds/gs_instruments.dls"
-            ]
-            
-            var loaded = false
-            for path in soundBankPaths {
-                if FileManager.default.fileExists(atPath: path) {
-                    print("AudioEngine: Trying to load \(path)")
-                    do {
-                        try sampler.loadSoundBankInstrument(
-                            at: URL(fileURLWithPath: path),
-                            program: accordionProgram,
-                            bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB),
-                            bankLSB: UInt8(kAUSampler_DefaultBankLSB)
-                        )
-                        print("AudioEngine: Loaded sound bank from \(path)")
-                        loaded = true
-                        break
-                    } catch {
-                        print("AudioEngine: Failed to load \(path): \(error)")
-                    }
-                }
-            }
-            
-            if !loaded {
-                // Fallback: try loading default preset
-                print("AudioEngine: Using default sampler preset")
-            }
-            
             isReady = true
-            print("AudioEngine: Ready! isReady = \(isReady)")
-            
-            // Test sound removed for release
-            
+            print("AudioEngine: Ready (sample rate \(sampleRate))")
         } catch {
             print("AudioEngine: Error starting engine: \(error)")
         }
     }
-    
+
+    // MARK: - Audio Render
+
+    private func renderAudio(frameCount: AVAudioFrameCount, abl: UnsafeMutablePointer<AudioBufferList>) -> OSStatus {
+        // Snapshot voice state under lock; render off-lock to minimise contention.
+        stateLock.lock()
+        var voiceList = Array(voices.values)
+        let expression = expressionLevel
+        stateLock.unlock()
+
+        let ablPointer = UnsafeMutableAudioBufferListPointer(abl)
+        let frames = Int(frameCount)
+        let sr = sampleRate
+        let attackInc = attackPerSec / sr
+        let releaseInc = releasePerSec / sr
+        let twoPi: Float = 2.0 * .pi
+
+        // Render mono mix into first buffer, then copy to others (stereo).
+        guard let firstBuffer = ablPointer.first,
+              let firstPtr = firstBuffer.mData?.assumingMemoryBound(to: Float.self) else {
+            return noErr
+        }
+
+        for f in 0..<frames {
+            var sample: Float = 0
+
+            for i in 0..<voiceList.count {
+                var v = voiceList[i]
+
+                // Envelope update
+                if v.isReleasing {
+                    v.envelope = max(0, v.envelope - releaseInc)
+                } else {
+                    v.envelope = min(1.0, v.envelope + attackInc)
+                }
+
+                if v.envelope > 0.0001 {
+                    // Two detuned sawtooth oscillators for accordion-like beating.
+                    let saw1 = (v.phase1 / .pi) - 1.0
+                    let saw2 = (v.phase2 / .pi) - 1.0
+                    sample += (saw1 + saw2) * 0.5 * v.envelope * v.velocity
+                }
+
+                v.phase1 += twoPi * v.freq1 / sr
+                if v.phase1 >= twoPi { v.phase1 -= twoPi }
+                v.phase2 += twoPi * v.freq2 / sr
+                if v.phase2 >= twoPi { v.phase2 -= twoPi }
+
+                voiceList[i] = v
+            }
+
+            firstPtr[f] = sample * expression * masterGain
+        }
+
+        // Copy to additional channels (e.g. stereo right).
+        for ch in 1..<ablPointer.count {
+            let buf = ablPointer[ch]
+            if let dst = buf.mData?.assumingMemoryBound(to: Float.self) {
+                memcpy(dst, firstPtr, frames * MemoryLayout<Float>.size)
+            }
+        }
+
+        // Commit updated phases/envelopes; drop dead voices.
+        stateLock.lock()
+        for v in voiceList {
+            if v.isReleasing && v.envelope <= 0.0001 {
+                voices.removeValue(forKey: v.note)
+            } else if voices[v.note] != nil {
+                voices[v.note] = v
+            }
+        }
+        stateLock.unlock()
+
+        return noErr
+    }
+
+    // MARK: - MIDI-like API
+
     /// Start playing a note
     func noteOn(_ note: UInt8, velocity: UInt8) {
-        print("AudioEngine: noteOn(\(note), velocity: \(velocity)), isReady: \(isReady)")
-        guard let sampler = sampler, isReady else {
-            print("AudioEngine: Cannot play - sampler nil or not ready")
-            return
-        }
-        
-        activeNotes[note] = velocity
-        sampler.startNote(note, withVelocity: velocity, onChannel: 0)
-        print("AudioEngine: Started note \(note)")
+        guard isReady else { return }
+        let freq = AudioEngine.midiToFrequency(note)
+        let velScaled = Float(max(velocity, 1)) / 127.0
+
+        stateLock.lock()
+        var voice = voices[note] ?? Voice(
+            note: note,
+            velocity: velScaled,
+            freq1: freq * 0.9985,    // -2.6 cents
+            freq2: freq * 1.0015     // +2.6 cents
+        )
+        voice.velocity = velScaled
+        voice.isReleasing = false
+        voice.sustainedAfterKeyUp = false
+        voices[note] = voice
+        stateLock.unlock()
     }
-    
+
     /// Stop playing a note
     func noteOff(_ note: UInt8) {
-        guard let sampler = sampler, isReady else { return }
-        
-        activeNotes.removeValue(forKey: note)
-        sampler.stopNote(note, onChannel: 0)
+        guard isReady else { return }
+        stateLock.lock()
+        if var v = voices[note] {
+            if sustainPedalDown {
+                v.sustainedAfterKeyUp = true
+            } else {
+                v.isReleasing = true
+            }
+            voices[note] = v
+        }
+        stateLock.unlock()
     }
-    
-    /// Update velocity for all active notes (bellows effect)
+
+    /// Update expression (CC11) for all active notes
     func updateVelocity(_ velocity: UInt8) {
-        guard let sampler = sampler, isReady else { return }
-        
-        // Use MIDI expression (CC 11) to control volume dynamically
-        sampler.sendController(11, withValue: velocity, onChannel: 0)
+        let level = Float(velocity) / 127.0
+        stateLock.lock()
+        expressionLevel = level
+        stateLock.unlock()
     }
-    
-    /// Update filter cutoff frequency based on bellows pressure
-    /// - Parameter pressure: 0.0 to 1.0
+
+    /// Update filter cutoff frequency based on bellows pressure (0…1)
     func updateFilter(pressure: Double) {
-        guard let eqFilter = eqFilter else { return }
-        
-        // Map pressure to frequency (Logarithmic scale works best for audio)
-        // 0.0 pressure = 400Hz (very muffled)
-        // 1.0 pressure = 8000+ Hz (bright and reedy)
+        guard let eq = eqFilter else { return }
         let minFreq: Double = 400.0
         let maxFreq: Double = 10000.0
-        
-        // Logarithmic interpolation
         let logMin = log(minFreq)
         let logMax = log(maxFreq)
         let targetLog = logMin + (logMax - logMin) * pressure
-        let currentFreq = exp(targetLog)
-        
-        eqFilter.bands[0].frequency = Float(currentFreq)
+        eq.bands[0].frequency = Float(exp(targetLog))
     }
-    
+
     /// Stop all notes
     func allNotesOff() {
-        guard let sampler = sampler else { return }
-        
-        for note in activeNotes.keys {
-            sampler.stopNote(note, onChannel: 0)
+        stateLock.lock()
+        for (note, var v) in voices {
+            v.isReleasing = true
+            voices[note] = v
         }
-        activeNotes.removeAll()
+        stateLock.unlock()
     }
-    
-    /// Set sustain pedal
+
+    /// Sustain pedal (CC64)
     func setSustain(_ on: Bool) {
-        guard let sampler = sampler else { return }
-        sampler.sendController(64, withValue: on ? 127 : 0, onChannel: 0)
+        stateLock.lock()
+        sustainPedalDown = on
+        if !on {
+            for (note, var v) in voices where v.sustainedAfterKeyUp {
+                v.isReleasing = true
+                v.sustainedAfterKeyUp = false
+                voices[note] = v
+            }
+        }
+        stateLock.unlock()
     }
-    
+
     func stop() {
         allNotesOff()
         audioEngine?.stop()
     }
-    
-    /// Get currently active notes
+
+    /// Get currently active (non-released) notes
     func getActiveNotes() -> Set<UInt8> {
-        return Set(activeNotes.keys)
+        stateLock.lock()
+        let notes = Set(voices.compactMap { $0.value.isReleasing ? nil : $0.key })
+        stateLock.unlock()
+        return notes
+    }
+
+    // MARK: - Helpers
+
+    private static func midiToFrequency(_ note: UInt8) -> Float {
+        return 440.0 * pow(2.0, (Float(note) - 69.0) / 12.0)
     }
 }

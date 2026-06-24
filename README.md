@@ -42,6 +42,20 @@ Since MAcordion requires deep hardware access to the lid angle sensor (IOHIDMana
     - Scroll down and click **Open Anyway** next to MAcordion.
 4. Enjoy playing!
 
+## GitHub Releases (ZIP)
+
+We publish ZIP artifacts on GitHub Releases. To download the latest:
+- Visit: https://github.com/bruiselea/MAcordion/releases
+- Download the latest MAcordion-<version>.zip
+- Requirements:
+  - Python 3
+  - pybooklid: `pip3 install pybooklid`
+- Run: `python3 accordion.py`
+
+Notes:
+- If the hinge sensor isn't available, the app falls back to keyboard-only mode.
+- v1.0.x includes fixes for lingering sound (deadzone, idle decay, channel cleanup, sustain-off purge).
+
 ## Building from Source
 
 Requirements:
@@ -49,38 +63,12 @@ Requirements:
 - Xcode 15+ / Swift 5.9+
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/bruiselea/MAcordion.git
-   ```
-2. Build and run:
-   ```bash
-   cd MAcordion
-   swift build && .build/debug/MAcordion
-   ```
-   Or open `Package.swift` in Xcode and press `Cmd + R`.
+```bash
+git clone https://github.com/bruiselea/MAcordion.git
+cd MAcordion
+# Python version (quick run)
+pip3 install pybooklid
+python3 accordion.py
 
-## Hardware & Software Requirements
-
-The core "Accordion" feature (dynamic volume control via screen angle) requires a high-resolution Lid Angle Sensor.
-
-**Minimum Hardware Requirements for full features:**
-- Any Apple Silicon MacBook (M1, M2, M3, M4 - Air or Pro)
-- Late 2019 Intel MacBook Pro (16-inch or newer)
-
-*(Older MacBooks from 2018 or earlier lack this sensor hardware.)*
-
-**Software Requirements (for Hinge Sensor):**
-- Python 3 installed (`/usr/bin/python3`, `/opt/homebrew/bin/python3`, etc.)
-- `pybooklid` package: `pip3 install pybooklid`
-
-If your Mac does not meet these hardware or software requirements, the app will automatically run in **Keyboard-Only Mode** — allowing you to play notes at a fixed volume without closing/opening the screen!
-## Architecture
-MAcordion is built entirely in Swift and SwiftUI.
-- **AudioEngine**: `AVAudioEngine` based sampler utilizing standard DLS/SoundFonts for classic accordion patches.
-- **HingeMonitor**: Reads the MacBook lid angle sensor. Auto-detects Python and falls back to keyboard-only mode.
-- **AccordionViewModel**: Handles the complex physics bridging the physical hinge velocity to MIDI expression/volume and filter bounds.
-
-## License
-
-This project is released under a custom, highly permissive license: **"Do whatever you want, as long as you provide credit."** 
-See the [LICENSE](LICENSE) file for details.
+# Swift version (open in Xcode if applicable)
+# open MAcordion.xcodeproj  # or Package.swift if using SwiftPM
