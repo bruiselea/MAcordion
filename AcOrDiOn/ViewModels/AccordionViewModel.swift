@@ -14,39 +14,63 @@ class AccordionViewModel: ObservableObject {
     private let noteMapper = NoteMapper()
     private let velocityCalculator = VelocityCalculator()
     
-    // Track keys that are currently physically pressed down
-    private var physicallyPressedKeys: Set<UInt16> = []
+    // Track keys that are currently physically pressed down, mapped to the
+    // MIDI note they triggered at press time. Storing the actual note (not
+    // recomputing on release) prevents stuck notes when the octave changes
+    // while a key is still held.
+    private var pressedKeyToNote: [UInt16: UInt8] = [:]
     
     // Derived UI State
     @Published var activeNoteNames: [String] = []
     
     // Timers
     private var updateTimer: Timer?
-    
+    private var hasStarted = false
+    private var keyboardOnlyAudioPrimed = false
+
+    // CC11 (expression) smoothing — abrupt drops cause audible clicks/pops as
+    // the sampler's amplitude steps. We slew downward changes; attacks remain
+    // instant so quick bellows accents stay snappy.
+    private var lastMidiVelocity: UInt8 = 0
+    private let maxVelocityDropPerFrame: Int = 6  // ≈ 180 units/sec at 30Hz
+
+    // Hysteresis on "bellows stopped" detection — ignore momentary zero
+    // crossings during natural bellows reversals.
+    private var silenceAccumulator: TimeInterval = 0
+    private let silenceReleaseThreshold: TimeInterval = 0.25
+
     init() {
         print("AccordionViewModel: Initialized")
     }
-    
+
     deinit {
         stop()
     }
-    
+
     // MARK: - Lifecycle
-    
+
     /// Whether hinge sensor is available (keyboard-only mode if false)
     var isKeyboardOnlyMode: Bool {
         return !hingeMonitor.isSensorAvailable
     }
-    
+
     func start() {
+        guard !hasStarted else { return }
+        hasStarted = true
         print("AccordionViewModel: Starting")
-        
-        if isKeyboardOnlyMode {
-            print("AccordionViewModel: Keyboard-only mode (no hinge sensor)")
-        } else {
-            hingeMonitor.startMonitoring()
+
+        // Sensor detection runs off the main thread; we begin in keyboard-only
+        // mode immediately and switch over if/when a working Python is found.
+        hingeMonitor.detectAsync { [weak self] available in
+            guard let self = self else { return }
+            if available {
+                print("AccordionViewModel: Hinge sensor detected — switching to bellows mode")
+                self.hingeMonitor.startMonitoring()
+            } else {
+                print("AccordionViewModel: Keyboard-only mode (no hinge sensor)")
+            }
         }
-        
+
         // Main update loop (30Hz)
         updateTimer = Timer.scheduledTimer(withTimeInterval: 1.0/30.0, repeats: true) { [weak self] _ in
             self?.update()
@@ -54,6 +78,8 @@ class AccordionViewModel: ObservableObject {
     }
     
     func stop() {
+        guard hasStarted else { return }
+        hasStarted = false
         print("AccordionViewModel: Stopping")
         updateTimer?.invalidate()
         updateTimer = nil
@@ -65,12 +91,18 @@ class AccordionViewModel: ObservableObject {
     
     private func update() {
         if isKeyboardOnlyMode {
-            // Keyboard-only mode: fixed pressure and velocity
-            appState.pressure = 0.8
-            appState.velocity = 100
-            audioEngine.updateVelocity(100)
-            audioEngine.updateFilter(pressure: 0.8)
+            // Keyboard-only mode: fixed pressure and velocity. Push the static
+            // CC11/filter values only once instead of spamming them at 30Hz.
+            if !keyboardOnlyAudioPrimed {
+                appState.pressure = 0.8
+                appState.velocity = 100
+                audioEngine.updateVelocity(100)
+                audioEngine.updateFilter(pressure: 0.8)
+                keyboardOnlyAudioPrimed = true
+            }
             return
+        } else {
+            keyboardOnlyAudioPrimed = false
         }
         
         // --- Hinge sensor mode below ---
@@ -104,36 +136,37 @@ class AccordionViewModel: ObservableObject {
             finalVelocity *= pow(pressureFactor, 0.5) 
         }
         
-        let midiVelocity = UInt8(min(127.0, max(0.0, finalVelocity)))
-        
+        let targetVelocity = Int(min(127.0, max(0.0, finalVelocity)))
+        let previous = Int(lastMidiVelocity)
+        // Slew-limit downward changes only; upward (attack) is instant.
+        let smoothedVelocity = targetVelocity < previous
+            ? max(targetVelocity, previous - maxVelocityDropPerFrame)
+            : targetVelocity
+        let midiVelocity = UInt8(smoothedVelocity)
+        lastMidiVelocity = midiVelocity
+
         // Apply parameters to audio engine
         audioEngine.updateVelocity(midiVelocity)
         audioEngine.updateFilter(pressure: appState.pressure)
-        
+
         // --- Note Release Logic on Hinge Stop ---
-        // A real accordion stops making sound immediately when the bellows stop moving.
-        // If our velocity dropped to 0, and sustain is OFF, we should release all notes
-        // that are not physically held down, and even if they are held down, 
-        // the 0 velocity will silence them anyway. 
-        if midiVelocity == 0 && !appState.isSustainOn {
+        // A real accordion stops making sound when the bellows stop moving.
+        // Use hysteresis so that natural bellows reversals (where velocity
+        // momentarily crosses zero) don't truncate sustained notes.
+        if midiVelocity == 0 {
+            silenceAccumulator += 1.0 / 30.0
+        } else {
+            silenceAccumulator = 0
+        }
+
+        if silenceAccumulator >= silenceReleaseThreshold && !appState.isSustainOn {
             let activeMidiNotes = appState.activeNotes
+            let heldNotes = Set(pressedKeyToNote.values)
             var notesRemoved = false
-            for note in activeMidiNotes {
-                // If the key is not physically held, release it entirely from the engine
-                let isHeld = physicallyPressedKeys.contains(where: { 
-                    if let mapped = keyCodeToMidiNote($0) {
-                        let octaveOffset = (appState.currentOctave - 4) * 12
-                        let fullNote = UInt8(max(0, min(127, Int(mapped) + octaveOffset)))
-                        return fullNote == note
-                    }
-                    return false
-                })
-                
-                if !isHeld {
-                    audioEngine.noteOff(note)
-                    appState.activeNotes.remove(note)
-                    notesRemoved = true
-                }
+            for note in activeMidiNotes where !heldNotes.contains(note) {
+                audioEngine.noteOff(note)
+                appState.activeNotes.remove(note)
+                notesRemoved = true
             }
             if notesRemoved {
                 updateActiveNoteNames()
@@ -156,17 +189,14 @@ class AccordionViewModel: ObservableObject {
             appState.isSustainOn.toggle()
             audioEngine.setSustain(appState.isSustainOn)
             
-            // If sustain was just turned off, we need to release any notes 
+            // If sustain was just turned off, we need to release any notes
             // that are ringing but whose keys are no longer physically held down.
             if !appState.isSustainOn {
                 let activeMidiNotes = appState.activeNotes
-                for note in activeMidiNotes {
-                    // Check if this MIDI note corresponds to any currently held key
-                    let isHeld = physicallyPressedKeys.contains(where: { keyCodeToMidiNote($0) == note })
-                    if !isHeld {
-                        audioEngine.noteOff(note)
-                        appState.activeNotes.remove(note)
-                    }
+                let heldNotes = Set(pressedKeyToNote.values)
+                for note in activeMidiNotes where !heldNotes.contains(note) {
+                    audioEngine.noteOff(note)
+                    appState.activeNotes.remove(note)
                 }
                 updateActiveNoteNames()
             }
@@ -179,39 +209,34 @@ class AccordionViewModel: ObservableObject {
         }
         
         // Note keys
-        physicallyPressedKeys.insert(keyCode)
-        
         if let midiNote = keyCodeToMidiNote(keyCode) {
             let octaveOffset = (appState.currentOctave - 4) * 12
             let note = UInt8(max(0, min(127, Int(midiNote) + octaveOffset)))
             let midiVelocity: UInt8 = isKeyboardOnlyMode ? 100 : UInt8(bellowsModel.currentExpression() * 127)
-            
+
+            pressedKeyToNote[keyCode] = note
             audioEngine.noteOn(note, velocity: max(midiVelocity, 1))  // Always at least velocity 1
             appState.activeNotes.insert(note)
             updateActiveNoteNames()
         }
     }
-    
+
     func handleKeyUp(_ keyCode: UInt16) {
         // Air valve release
         if keyCode == 49 { // Space
             appState.isAirValveOpen = false
             return
         }
-        
-        // Note release
-        physicallyPressedKeys.remove(keyCode)
-        
-        if let midiNote = keyCodeToMidiNote(keyCode) {
-            let octaveOffset = (appState.currentOctave - 4) * 12
-            let note = UInt8(max(0, min(127, Int(midiNote) + octaveOffset)))
-            
-            if !appState.isSustainOn {
-                audioEngine.noteOff(note)
-                appState.activeNotes.remove(note)
-            }
-            updateActiveNoteNames()
+
+        // Note release — use the note recorded at press time so that an
+        // octave change while the key is held doesn't leave a stuck note.
+        guard let note = pressedKeyToNote.removeValue(forKey: keyCode) else { return }
+
+        if !appState.isSustainOn {
+            audioEngine.noteOff(note)
+            appState.activeNotes.remove(note)
         }
+        updateActiveNoteNames()
     }
     
     // MARK: - Private Helpers

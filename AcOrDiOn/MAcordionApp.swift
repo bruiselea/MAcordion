@@ -3,14 +3,12 @@ import AppKit
 
 @main
 struct MAcordionApp: App {
-    @StateObject private var appState = AppState()
     @StateObject private var keyboardHandler = KeyboardHandler()
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    
+
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(appState)
                 .environmentObject(keyboardHandler)
                 .frame(minWidth: 600, minHeight: 400)
         }

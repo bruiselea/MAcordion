@@ -12,11 +12,11 @@ let package = Package(
             path: "AcOrDiOn",
             exclude: [
                 "Info.plist",
-                "MAcordion.entitlements",
-                "Resources/lid_angle_stream.py"
+                "MAcordion.entitlements"
             ],
             resources: [
-                .copy("Resources/how_to_play.png")
+                .copy("Resources/how_to_play.png"),
+                .copy("Resources/lid_angle_stream.py")
             ]
         )
     ]

@@ -11,7 +11,7 @@ while True:
     try:
         angle = read_lid_angle()
         print(angle, flush=True)
-        time.sleep(1.0/30.0)  # 30Hz update rate
+        time.sleep(1.0/60.0)  # 60Hz — finer sampling improves responsiveness
     except Exception as e:
         print(f"ERROR:{e}", flush=True)
         time.sleep(0.1)

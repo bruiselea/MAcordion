@@ -10,9 +10,11 @@ class VelocityCalculator {
     private let minVelocity: Int = 20
     private let maxVelocity: Int = 127
     
-    // Smoothing
+    // Smoothing — lower factor = heavier smoothing (more lag, less jitter).
+    // VelocityCalculator runs in the 30Hz update loop, so 0.35 gives ~95ms
+    // time constant — fast enough to feel snappy without resurrecting jitter.
     private var smoothedVelocity: Double = 0
-    private let smoothingFactor: Double = 0.4 // Slightly faster response
+    private let smoothingFactor: Double = 0.35
     
     /// Calculate MIDI velocity (0-127) from angular velocity (degrees/second)
     func calculateVelocity(from angularVelocity: Double) -> Int {
