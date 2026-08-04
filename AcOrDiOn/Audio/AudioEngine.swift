@@ -40,7 +40,7 @@ class AudioEngine: ObservableObject {
     // Envelope rates per second (higher = faster).
     private let attackPerSec: Float = 35    // ~28ms 0→1
     private let releasePerSec: Float = 9    // ~110ms 1→0
-    private let masterGain: Float = 0.18    // headroom for polyphony
+    private let masterGain: Float = 0.26    // headroom for polyphony
 
     init() {
         setupAudioEngine()
@@ -154,12 +154,23 @@ class AudioEngine: ObservableObject {
         }
 
         // Commit updated phases/envelopes; drop dead voices.
+        //
+        // Only adopt the render-owned fields (phase + envelope) from the
+        // snapshot. Control flags (isReleasing, velocity, sustain) may have
+        // been changed on the main thread while we were rendering off-lock —
+        // writing back the whole stale snapshot would clobber a concurrent
+        // noteOn/noteOff and leave a note stuck (the "sometimes residual
+        // sound" bug).
         stateLock.lock()
         for v in voiceList {
-            if v.isReleasing && v.envelope <= 0.0001 {
+            guard var current = voices[v.note] else { continue }
+            current.phase1 = v.phase1
+            current.phase2 = v.phase2
+            current.envelope = v.envelope
+            if current.isReleasing && current.envelope <= 0.0001 {
                 voices.removeValue(forKey: v.note)
-            } else if voices[v.note] != nil {
-                voices[v.note] = v
+            } else {
+                voices[v.note] = current
             }
         }
         stateLock.unlock()

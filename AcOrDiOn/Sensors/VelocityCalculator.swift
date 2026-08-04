@@ -4,7 +4,7 @@ import Foundation
 class VelocityCalculator {
     // Thresholds for velocity mapping (degrees per second)
     private let minVelocityThreshold: Double = 1.0   // Smooth start
-    private let maxVelocityThreshold: Double = 120.0 // Requires much faster, larger movements to reach max volume
+    private let maxVelocityThreshold: Double = 220.0 // Wider dynamic range — reaching MIDI 127 needs a genuinely vigorous pump
     
     // MIDI velocity ranges
     private let minVelocity: Int = 20
@@ -25,15 +25,16 @@ class VelocityCalculator {
         let velocity: Int
         
         if smoothedVelocity < minVelocityThreshold {
-            // Almost stationary - rapid fade out to 0
-            velocity = max(0, Int(Double(minVelocity) * (smoothedVelocity / minVelocityThreshold)))
+            // Below threshold → genuine silence. Returning a scaled minVelocity
+            // here used to keep the bellows leaking volume from sensor noise.
+            velocity = 0
         } else {
             // Normalize movement speed between 0.0 and 1.0
             let normalizedSpeed = min(1.0, (smoothedVelocity - minVelocityThreshold) / (maxVelocityThreshold - minVelocityThreshold))
             
-            // Apply an exponential curve (pow 1.2). This keeps the volume lower at slow-to-medium
-            // speeds, requiring a genuinely fast and large movement to hit the maximum MIDI velocity.
-            let curve = pow(normalizedSpeed, 1.2)
+            // Apply an exponential curve. Higher exponent => more headroom in the
+            // mid range so casual pumping sits well below the ceiling.
+            let curve = pow(normalizedSpeed, 1.6)
             
             velocity = minVelocity + Int(curve * Double(maxVelocity - minVelocity))
         }
