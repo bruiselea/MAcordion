@@ -16,20 +16,32 @@ public enum BellowsMode {
 
     fileprivate var bellowsLabel: String {
         switch self {
-        case .hinge: return "Hinge / Bellows"
-        case .breath: return "Breath / Bellows"
-        case .shisha: return "Shisha / Bellows"
+        case .hinge:
+            return L10n.string("bellows.hinge", fallback: "Hinge / Bellows")
+        case .breath:
+            return L10n.string("bellows.breath", fallback: "Breath / Bellows")
+        case .shisha:
+            return L10n.string("bellows.shisha", fallback: "Shisha / Bellows")
         }
     }
 
     fileprivate var onboardingBody: String {
         switch self {
         case .hinge:
-            return "Open and close your MacBook display to stretch the on-screen bellows. The speed of the movement controls expression."
+            return L10n.string(
+                "onboarding.hinge.body",
+                fallback: "Open and close your MacBook display to stretch the on-screen bellows. The speed of the movement controls expression."
+            )
         case .breath:
-            return "Blow gently toward the microphone to move air through the instrument and shape the expression."
+            return L10n.string(
+                "onboarding.breath.body",
+                fallback: "Blow gently toward the microphone to move air through the instrument and shape the expression."
+            )
         case .shisha:
-            return "Draw or blow through the connected pressure sensor to move the bellows and shape the expression."
+            return L10n.string(
+                "onboarding.shisha.body",
+                fallback: "Draw or blow through the connected pressure sensor to move the bellows and shape the expression."
+            )
         }
     }
 }
@@ -159,11 +171,16 @@ public struct DiagnosticsSettingsView: View {
 
     public var body: some View {
         Form {
-            Section("Sensor") {
-                LabeledContent("Source", value: sourceName)
-                LabeledContent("Status") {
+            Section(L10n.string("settings.sensor", fallback: "Sensor")) {
+                LabeledContent(
+                    L10n.string("settings.source", fallback: "Source"),
+                    value: sourceName
+                )
+                LabeledContent(L10n.string("settings.status", fallback: "Status")) {
                     Label(
-                        diagnostics.isConnected ? "Connected" : "Unavailable",
+                        diagnostics.isConnected
+                            ? L10n.string("settings.connected", fallback: "Connected")
+                            : L10n.string("settings.unavailable", fallback: "Unavailable"),
                         systemImage: diagnostics.isConnected
                             ? "checkmark.circle.fill"
                             : "exclamationmark.circle"
@@ -177,13 +194,13 @@ public struct DiagnosticsSettingsView: View {
 
                 if mode == .hinge {
                     LabeledContent(
-                        "Hinge angle",
+                        L10n.string("settings.hingeAngle", fallback: "Hinge angle"),
                         value: "\(Int(diagnostics.angle.rounded()))°"
                     )
                 }
 
                 LabeledContent(
-                    "Air pressure",
+                    L10n.string("settings.airPressure", fallback: "Air pressure"),
                     value: "\(Int(min(1, max(0, diagnostics.pressure)) * 100))%"
                 )
             }
@@ -195,9 +212,21 @@ public struct DiagnosticsSettingsView: View {
 
     private var sourceName: String {
         switch mode {
-        case .hinge: return "MacBook hinge sensor"
-        case .breath: return "Built-in microphone"
-        case .shisha: return "Shisha pressure sensor"
+        case .hinge:
+            return L10n.string(
+                "settings.source.hinge",
+                fallback: "MacBook hinge sensor"
+            )
+        case .breath:
+            return L10n.string(
+                "settings.source.breath",
+                fallback: "Built-in microphone"
+            )
+        case .shisha:
+            return L10n.string(
+                "settings.source.shisha",
+                fallback: "Shisha pressure sensor"
+            )
         }
     }
 }
@@ -224,7 +253,10 @@ private struct StudioHeader: View {
             Spacer()
 
             Button(action: onHelp) {
-                Label("Help", systemImage: "questionmark.circle")
+                Label(
+                    L10n.string("header.help", fallback: "Help"),
+                    systemImage: "questionmark.circle"
+                )
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(StudioPalette.secondaryText)
             }
@@ -232,7 +264,12 @@ private struct StudioHeader: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .contentShape(Rectangle())
-            .accessibilityHint("Shows keyboard controls and playing instructions")
+            .accessibilityHint(
+                L10n.string(
+                    "header.help.hint",
+                    fallback: "Shows keyboard controls and playing instructions"
+                )
+            )
         }
         .padding(.horizontal, 28)
         .frame(height: 68)
@@ -254,7 +291,7 @@ private struct PerformanceControls: View {
     var body: some View {
         VStack(spacing: 0) {
             ToggleControl(
-                title: "Sustain",
+                title: L10n.string("control.sustain", fallback: "Sustain"),
                 shortcut: "Tab",
                 systemImage: "waveform",
                 isActive: sustainOn,
@@ -264,8 +301,8 @@ private struct PerformanceControls: View {
             Divider().overlay(StudioPalette.separator)
 
             MomentaryControl(
-                title: "Air Valve",
-                shortcut: "Hold Space",
+                title: L10n.string("control.airValve", fallback: "Air Valve"),
+                shortcut: L10n.string("control.holdSpace", fallback: "Hold Space"),
                 systemImage: "wind",
                 isActive: airValveOpen,
                 onPressedChange: onAirValve
@@ -276,14 +313,17 @@ private struct PerformanceControls: View {
                 .padding(.vertical, 18)
 
             VStack(spacing: 12) {
-                Text("Octave")
+                Text(L10n.string("control.octave", fallback: "Octave"))
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(StudioPalette.secondaryText)
 
                 HStack(spacing: 18) {
                     RoundIconButton(
                         systemImage: "minus",
-                        accessibilityLabel: "Octave down",
+                        accessibilityLabel: L10n.string(
+                            "control.octaveDown",
+                            fallback: "Octave down"
+                        ),
                         action: onOctaveDown
                     )
                     .disabled(octave <= 0)
@@ -296,7 +336,10 @@ private struct PerformanceControls: View {
 
                     RoundIconButton(
                         systemImage: "plus",
-                        accessibilityLabel: "Octave up",
+                        accessibilityLabel: L10n.string(
+                            "control.octaveUp",
+                            fallback: "Octave up"
+                        ),
                         action: onOctaveUp
                     )
                     .disabled(octave >= 8)
@@ -349,7 +392,11 @@ private struct ToggleControl: View {
             .padding(.vertical, 13)
         }
         .buttonStyle(.plain)
-        .accessibilityValue(isActive ? "On" : "Off")
+        .accessibilityValue(
+            isActive
+                ? L10n.string("state.on", fallback: "On")
+                : L10n.string("state.off", fallback: "Off")
+        )
     }
 }
 
@@ -397,8 +444,17 @@ private struct MomentaryControl: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(title)
-        .accessibilityValue(isActive ? "Open" : "Closed")
-        .accessibilityHint("Press and hold to open")
+        .accessibilityValue(
+            isActive
+                ? L10n.string("state.open", fallback: "Open")
+                : L10n.string("state.closed", fallback: "Closed")
+        )
+        .accessibilityHint(
+            L10n.string(
+                "control.airValve.hint",
+                fallback: "Press and hold to open"
+            )
+        )
     }
 }
 
@@ -482,7 +538,13 @@ private struct VerticalBellowsView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(mode.bellowsLabel)
-        .accessibilityValue("\(Int(clampedAngle.rounded())) degrees")
+        .accessibilityValue(
+            L10n.format(
+                "accessibility.angle",
+                fallback: "%d degrees",
+                Int(clampedAngle.rounded())
+            )
+        )
     }
 }
 
@@ -607,8 +669,16 @@ private struct AirPressureMeter: View {
                 .stroke(StudioPalette.separator, lineWidth: 1)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Air pressure")
-        .accessibilityValue("\(Int(clampedLevel * 100)) percent")
+        .accessibilityLabel(
+            L10n.string("settings.airPressure", fallback: "Air pressure")
+        )
+        .accessibilityValue(
+            L10n.format(
+                "accessibility.pressure",
+                fallback: "%d percent",
+                Int(clampedLevel * 100)
+            )
+        )
     }
 }
 
@@ -754,8 +824,19 @@ private struct PlayablePianoKey: View {
         )
         .animation(.easeOut(duration: 0.08), value: isActive)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(spec.noteLabel), keyboard key \(spec.keyLabel)")
-        .accessibilityValue(isActive ? "Playing" : "Not playing")
+        .accessibilityLabel(
+            L10n.format(
+                "accessibility.key",
+                fallback: "%@, keyboard key %@",
+                spec.noteLabel,
+                spec.keyLabel
+            )
+        )
+        .accessibilityValue(
+            isActive
+                ? L10n.string("state.playing", fallback: "Playing")
+                : L10n.string("state.notPlaying", fallback: "Not playing")
+        )
     }
 
     private var keyFill: Color {
@@ -780,10 +861,15 @@ private struct HowToPlayView: View {
         VStack(alignment: .leading, spacing: 22) {
             HStack {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Play MAcordion")
+                    Text(L10n.string("onboarding.title", fallback: "Play MAcordion"))
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundStyle(StudioPalette.primaryText)
-                    Text("Your Mac is the instrument.")
+                    Text(
+                        L10n.string(
+                            "onboarding.subtitle",
+                            fallback: "Your Mac is the instrument."
+                        )
+                    )
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(StudioPalette.secondaryText)
                 }
@@ -801,18 +887,43 @@ private struct HowToPlayView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(spacing: 0) {
-                InstructionRow(icon: "pianokeys", title: "Play notes", detail: "A–; and W–P")
+                InstructionRow(
+                    icon: "pianokeys",
+                    title: L10n.string("onboarding.playNotes", fallback: "Play notes"),
+                    detail: "A–; and W–P"
+                )
                 Divider().overlay(StudioPalette.separator)
-                InstructionRow(icon: "arrow.up.and.down", title: "Change octave", detail: "Z / X")
+                InstructionRow(
+                    icon: "arrow.up.and.down",
+                    title: L10n.string(
+                        "onboarding.changeOctave",
+                        fallback: "Change octave"
+                    ),
+                    detail: "Z / X"
+                )
                 Divider().overlay(StudioPalette.separator)
-                InstructionRow(icon: "wind", title: "Open air valve", detail: "Hold Space")
+                InstructionRow(
+                    icon: "wind",
+                    title: L10n.string(
+                        "onboarding.openAirValve",
+                        fallback: "Open air valve"
+                    ),
+                    detail: L10n.string("control.holdSpace", fallback: "Hold Space")
+                )
                 Divider().overlay(StudioPalette.separator)
-                InstructionRow(icon: "waveform", title: "Toggle sustain", detail: "Tab")
+                InstructionRow(
+                    icon: "waveform",
+                    title: L10n.string(
+                        "onboarding.toggleSustain",
+                        fallback: "Toggle sustain"
+                    ),
+                    detail: "Tab"
+                )
             }
             .background(StudioPalette.background, in: RoundedRectangle(cornerRadius: 12))
 
             Button(action: onDismiss) {
-                Text("Start Playing")
+                Text(L10n.string("onboarding.start", fallback: "Start Playing"))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.white)
                     .frame(maxWidth: .infinity)

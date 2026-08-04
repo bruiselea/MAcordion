@@ -1,23 +1,34 @@
-# ⚠️ WARNING: USE AT YOUR OWN RISK ⚠️
-> **This application directly accesses your MacBook's hardware sensors (lid angle / hinge) and microphone. Any damage to your device caused by using this software is YOUR responsibility. The developers assume NO liability whatsoever. By using this software, you agree that you do so entirely at your own risk.**
-
----
-
 # MAcordion 🪗
 *Vibe coded by bruiselea*
 
-Turn your MacBook into a fully functional accordion — or, with Breath mode, into a melodica (鍵盤ハーモニカ / pianica). By opening and closing your Mac's screen (or by blowing into the microphone), you control the airflow and dynamics of the sound. Play melodies on the keyboard while "pumping" air, just like a real instrument.
+MAcordion turns your MacBook itself into a playable instrument. Open and close
+the display to move the on-screen bellows, then use the Mac keyboard to play
+notes. The hinge speed controls the airflow and expression, so the physical
+movement of the computer becomes part of the performance.
+
+MAcordionは、MacBookそのものを楽器にするmacOSアプリです。ディスプレイの
+開閉と画面上の蛇腹が同期し、ヒンジを動かす速さで空気の流れと音の表情を
+コントロールできます。Macのキーボードで音階を演奏します。
 
 ![MAcordion performance interface](Design/macordion-studio-minimal-implementation.png)
 
-## Highlights
+## What MAcordion includes
 
-- Native MacBook hinge sensor integration with no Python or Homebrew dependency
-- Bellows movement mapped directly to the physical display angle
-- Responsive keyboard performance while the hinge is moving
-- Minimal graphite performance interface with live air-expression feedback
-- Native Settings diagnostics for sensor status, hinge angle, and pressure
-- Universal 2 release packages for Apple Silicon and Intel Macs
+- **Physical bellows control** — the vertical bellows follows the measured
+  MacBook display angle directly, without visual spring lag.
+- **Playable Mac keyboard** — notes remain responsive while the hinge is moving.
+- **Native sensor access** — the hinge edition uses macOS IOHID directly, with
+  no Python, pybooklid, or Homebrew dependency.
+- **Focused performance UI** — the main window keeps only the instrument,
+  essential controls, keyboard, and an unobtrusive air-expression meter.
+- **Separate diagnostics** — connection state, hinge angle, and air pressure
+  live in the native **MAcordion → Settings…** window.
+- **English and Japanese** — interface copy, onboarding, accessibility labels,
+  Settings, and permission descriptions follow the Mac's preferred language.
+- **Three input editions** — Hinge, Breath, and Shisha variants share the same
+  instrument and keyboard mapping.
+- **Reproducible Universal 2 packages** — release ZIPs support Apple Silicon
+  and Intel Macs.
 
 <details>
 <summary>Sensor diagnostics</summary>
@@ -28,6 +39,13 @@ diagnostic clutter to the performance view.
 <img src="Design/macordion-settings-diagnostics.png" alt="MAcordion sensor diagnostics settings" width="420">
 
 </details>
+
+## Safety notice
+
+> **USE AT YOUR OWN RISK:** This application reads MacBook hardware sensors
+> (lid angle / hinge) and can access the microphone in Breath mode. Move the
+> display gently and never force the hinge beyond its normal range. The
+> developers assume no liability for device damage or data loss.
 
 ## Launch Options
 

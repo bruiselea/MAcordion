@@ -1,0 +1,45 @@
+"bellows.hinge" = "ヒンジ／蛇腹";
+"bellows.breath" = "息／蛇腹";
+"bellows.shisha" = "シーシャ／蛇腹";
+"onboarding.hinge.body" = "MacBookのディスプレイを開閉すると、画面上の蛇腹が伸び縮みします。動かす速さで音の表情が変わります。";
+"onboarding.breath.body" = "マイクに向かってやさしく息を吹きかけると、楽器に空気が流れ、音の表情が変わります。";
+"onboarding.shisha.body" = "接続した圧力センサーから吸う、または吹くことで蛇腹が動き、音の表情が変わります。";
+
+"settings.sensor" = "センサー";
+"settings.source" = "入力元";
+"settings.status" = "状態";
+"settings.connected" = "接続済み";
+"settings.unavailable" = "利用できません";
+"settings.hingeAngle" = "ヒンジ角度";
+"settings.airPressure" = "空気圧";
+"settings.source.hinge" = "MacBookヒンジセンサー";
+"settings.source.breath" = "内蔵マイク";
+"settings.source.shisha" = "シーシャ圧力センサー";
+
+"header.help" = "ヘルプ";
+"header.help.hint" = "キーボード操作と演奏方法を表示します";
+"control.sustain" = "サステイン";
+"control.airValve" = "空気弁";
+"control.holdSpace" = "Space長押し";
+"control.octave" = "オクターブ";
+"control.octaveDown" = "オクターブを下げる";
+"control.octaveUp" = "オクターブを上げる";
+"state.on" = "オン";
+"state.off" = "オフ";
+"state.open" = "開";
+"state.closed" = "閉";
+"control.airValve.hint" = "押している間、空気弁を開きます";
+
+"accessibility.angle" = "%d度";
+"accessibility.pressure" = "%dパーセント";
+"accessibility.key" = "%@、キーボードの%@キー";
+"state.playing" = "演奏中";
+"state.notPlaying" = "停止中";
+
+"onboarding.title" = "MAcordionを演奏";
+"onboarding.subtitle" = "あなたのMacが楽器になります。";
+"onboarding.playNotes" = "音を鳴らす";
+"onboarding.changeOctave" = "オクターブを変更";
+"onboarding.openAirValve" = "空気弁を開く";
+"onboarding.toggleSustain" = "サステインを切り替え";
+"onboarding.start" = "演奏を始める";
