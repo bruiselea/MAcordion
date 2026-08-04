@@ -1,0 +1,45 @@
+"bellows.hinge" = "Hinge / Bellows";
+"bellows.breath" = "Breath / Bellows";
+"bellows.shisha" = "Shisha / Bellows";
+"onboarding.hinge.body" = "Open and close your MacBook display to stretch the on-screen bellows. The speed of the movement controls expression.";
+"onboarding.breath.body" = "Blow gently toward the microphone to move air through the instrument and shape the expression.";
+"onboarding.shisha.body" = "Draw or blow through the connected pressure sensor to move the bellows and shape the expression.";
+
+"settings.sensor" = "Sensor";
+"settings.source" = "Source";
+"settings.status" = "Status";
+"settings.connected" = "Connected";
+"settings.unavailable" = "Unavailable";
+"settings.hingeAngle" = "Hinge angle";
+"settings.airPressure" = "Air pressure";
+"settings.source.hinge" = "MacBook hinge sensor";
+"settings.source.breath" = "Built-in microphone";
+"settings.source.shisha" = "Shisha pressure sensor";
+
+"header.help" = "Help";
+"header.help.hint" = "Shows keyboard controls and playing instructions";
+"control.sustain" = "Sustain";
+"control.airValve" = "Air Valve";
+"control.holdSpace" = "Hold Space";
+"control.octave" = "Octave";
+"control.octaveDown" = "Octave down";
+"control.octaveUp" = "Octave up";
+"state.on" = "On";
+"state.off" = "Off";
+"state.open" = "Open";
+"state.closed" = "Closed";
+"control.airValve.hint" = "Press and hold to open";
+
+"accessibility.angle" = "%d degrees";
+"accessibility.pressure" = "%d percent";
+"accessibility.key" = "%@, keyboard key %@";
+"state.playing" = "Playing";
+"state.notPlaying" = "Not playing";
+
+"onboarding.title" = "Play MAcordion";
+"onboarding.subtitle" = "Your Mac is the instrument.";
+"onboarding.playNotes" = "Play notes";
+"onboarding.changeOctave" = "Change octave";
+"onboarding.openAirValve" = "Open air valve";
+"onboarding.toggleSustain" = "Toggle sustain";
+"onboarding.start" = "Start Playing";
