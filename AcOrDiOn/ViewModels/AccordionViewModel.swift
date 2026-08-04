@@ -4,15 +4,42 @@ import Combine
 /// Main ViewModel managing the accordion state and logic
 class AccordionViewModel: ObservableObject {
     @Published var appState = AppState()
-    
+
     // Core Engine Components
-    let hingeMonitor = HingeMonitor()
+    let bellowsSource: BellowsSource
     let audioEngine = AudioEngine()
     let bellowsModel = BellowsModel()
-    
+
     // Helpers
     private let noteMapper = NoteMapper()
     private let velocityCalculator = VelocityCalculator()
+    private var hingeAngleCancellable: AnyCancellable?
+    private var appStateCancellable: AnyCancellable?
+
+    init(bellowsSource: BellowsSource = HingeMonitor()) {
+        self.bellowsSource = bellowsSource
+        // `appState` is a nested ObservableObject. Forward its publications so
+        // ContentView redraws for live angle/pressure changes even while a
+        // note key remains held; publishing only the reference is insufficient.
+        appStateCancellable = appState.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] in
+                self?.objectWillChange.send()
+            }
+        if let hinge = bellowsSource as? HingeMonitor {
+            // Position is a visual control signal, not part of the slower
+            // audio/pressure simulation. Forward every sensor publication
+            // directly so the bellows tracks the display hinge at sensor rate.
+            hingeAngleCancellable = hinge.$currentAngle
+                .removeDuplicates()
+                .receive(on: RunLoop.main)
+                .sink { [weak self] angle in
+                    self?.appState.currentAngle = angle
+                    DiagnosticsStore.shared.updateAngle(angle)
+                }
+        }
+        print("AccordionViewModel: Initialized with \(type(of: bellowsSource))")
+    }
     
     // Track keys that are currently physically pressed down, mapped to the
     // MIDI note they triggered at press time. Storing the actual note (not
@@ -32,16 +59,31 @@ class AccordionViewModel: ObservableObject {
     // the sampler's amplitude steps. We slew downward changes; attacks remain
     // instant so quick bellows accents stay snappy.
     private var lastMidiVelocity: UInt8 = 0
-    private let maxVelocityDropPerFrame: Int = 6  // ≈ 180 units/sec at 30Hz
+    // Slower downward slew gives a natural "reeds-still-speaking" tail when the
+    // bellows stops, without faking sound from a static pressure floor.
+    private let maxVelocityDropPerFrame: Int = 3  // ≈ 90 units/sec at 30Hz
 
     // Hysteresis on "bellows stopped" detection — ignore momentary zero
     // crossings during natural bellows reversals.
     private var silenceAccumulator: TimeInterval = 0
     private let silenceReleaseThreshold: TimeInterval = 0.25
 
-    init() {
-        print("AccordionViewModel: Initialized")
+    // Diagnostic file logger (shares ShishaMonitor's debug file). Flushes
+    // every write because the file is opened append-only.
+    private static let debugLogHandle: FileHandle? = {
+        let path = "/tmp/macordion_shisha_debug.log"
+        if !FileManager.default.fileExists(atPath: path) {
+            FileManager.default.createFile(atPath: path, contents: nil)
+        }
+        let h = FileHandle(forWritingAtPath: path)
+        try? h?.seekToEnd()
+        return h
+    }()
+    private static func dbg(_ s: String) {
+        guard let h = debugLogHandle, let data = "\(Date()) \(s)\n".data(using: .utf8) else { return }
+        try? h.write(contentsOf: data)
     }
+    private var diagCounter = 0
 
     deinit {
         stop()
@@ -49,25 +91,26 @@ class AccordionViewModel: ObservableObject {
 
     // MARK: - Lifecycle
 
-    /// Whether hinge sensor is available (keyboard-only mode if false)
-    var isKeyboardOnlyMode: Bool {
-        return !hingeMonitor.isSensorAvailable
-    }
+    /// Published explicitly so the header refreshes as soon as asynchronous
+    /// hardware discovery finishes, even before the first angle changes.
+    @Published private(set) var isKeyboardOnlyMode = true
 
     func start() {
         guard !hasStarted else { return }
         hasStarted = true
         print("AccordionViewModel: Starting")
 
-        // Sensor detection runs off the main thread; we begin in keyboard-only
-        // mode immediately and switch over if/when a working Python is found.
-        hingeMonitor.detectAsync { [weak self] available in
+        // Source detection runs off the main thread; we begin in keyboard-only
+        // mode immediately and switch over once the source signals ready.
+        bellowsSource.detectAsync { [weak self] available in
             guard let self = self else { return }
+            self.isKeyboardOnlyMode = !available
+            DiagnosticsStore.shared.updateConnection(available)
             if available {
-                print("AccordionViewModel: Hinge sensor detected — switching to bellows mode")
-                self.hingeMonitor.startMonitoring()
+                print("AccordionViewModel: Bellows source available — switching to bellows mode")
+                self.bellowsSource.startMonitoring()
             } else {
-                print("AccordionViewModel: Keyboard-only mode (no hinge sensor)")
+                print("AccordionViewModel: Keyboard-only mode (no bellows source)")
             }
         }
 
@@ -76,14 +119,15 @@ class AccordionViewModel: ObservableObject {
             self?.update()
         }
     }
-    
+
     func stop() {
         guard hasStarted else { return }
         hasStarted = false
         print("AccordionViewModel: Stopping")
         updateTimer?.invalidate()
         updateTimer = nil
-        hingeMonitor.stopMonitoring()
+        bellowsSource.stopMonitoring()
+        DiagnosticsStore.shared.updateConnection(false)
         audioEngine.stop()
     }
     
@@ -95,6 +139,7 @@ class AccordionViewModel: ObservableObject {
             // CC11/filter values only once instead of spamming them at 30Hz.
             if !keyboardOnlyAudioPrimed {
                 appState.pressure = 0.8
+                DiagnosticsStore.shared.updatePressure(0.8)
                 appState.velocity = 100
                 audioEngine.updateVelocity(100)
                 audioEngine.updateFilter(pressure: 0.8)
@@ -105,13 +150,26 @@ class AccordionViewModel: ObservableObject {
             keyboardOnlyAudioPrimed = false
         }
         
-        // --- Hinge sensor mode below ---
-        
-        // Update raw sensor data to state
-        appState.currentAngle = hingeMonitor.currentAngle
-        
-        let velocity = velocityCalculator.calculateVelocity(from: hingeMonitor.angularVelocity)
+        // --- Bellows source mode below ---
+
+        // Direct-expression shortcut (shisha): the source already produces a
+        // clean 0–1 pressure signal, so drive volume/filter straight from it
+        // without running through VelocityCalculator + BellowsModel.
+        if let direct = bellowsSource.directExpression {
+            handleDirectExpression(direct)
+            return
+        }
+
+        let rawBellowsVelocity = bellowsSource.bellowsVelocity
+        let velocity = velocityCalculator.calculateVelocity(from: rawBellowsVelocity)
         appState.velocity = velocity
+
+        // Log once per second so we can correlate puffs with audio without
+        // drowning the file in 30Hz noise.
+        diagCounter += 1
+        if diagCounter % 30 == 0 {
+            Self.dbg("VM.update raw=\(String(format: "%.1f", rawBellowsVelocity)) midi=\(velocity) pressure=\(String(format: "%.2f", bellowsModel.pressure)) keys=\(pressedKeyToNote.count) notes=\(appState.activeNotes.count)")
+        }
         
         // Update physical model based on sensor and user input
         bellowsModel.isAirValveOpen = appState.isAirValveOpen
@@ -119,6 +177,7 @@ class AccordionViewModel: ObservableObject {
         
         // Export physical state back to UI
         appState.pressure = bellowsModel.pressure
+        DiagnosticsStore.shared.updatePressure(bellowsModel.pressure)
         
         // Calculate final audio parameters
         var finalVelocity = Double(velocity)
@@ -133,7 +192,7 @@ class AccordionViewModel: ObservableObject {
             finalVelocity = 0
         } else {
             let pressureFactor = (bellowsModel.pressure - 0.05) / 0.95
-            finalVelocity *= pow(pressureFactor, 0.5) 
+            finalVelocity *= pow(pressureFactor, 0.5)
         }
         
         let targetVelocity = Int(min(127.0, max(0.0, finalVelocity)))
@@ -153,7 +212,10 @@ class AccordionViewModel: ObservableObject {
         // A real accordion stops making sound when the bellows stop moving.
         // Use hysteresis so that natural bellows reversals (where velocity
         // momentarily crosses zero) don't truncate sustained notes.
-        if midiVelocity == 0 {
+        // We also gate on the raw angular velocity so that residual MIDI
+        // velocity from smoothing tails doesn't keep resetting the timer.
+        let bellowsIdle = midiVelocity == 0 && rawBellowsVelocity < 1.5
+        if bellowsIdle {
             silenceAccumulator += 1.0 / 30.0
         } else {
             silenceAccumulator = 0
@@ -172,8 +234,73 @@ class AccordionViewModel: ObservableObject {
                 updateActiveNoteNames()
             }
         }
+
+        // Last-resort safety net: if no physical key is held, sustain is off,
+        // and the bellows have been idle for a while, force all voices off.
+        // Catches edge cases where a keyUp event was dropped (window lost
+        // focus, modifier keys, etc.) and a voice was orphaned.
+        if pressedKeyToNote.isEmpty && !appState.isSustainOn && bellowsIdle
+            && silenceAccumulator >= silenceReleaseThreshold * 2 {
+            audioEngine.allNotesOff()
+            if !appState.activeNotes.isEmpty {
+                appState.activeNotes.removeAll()
+                updateActiveNoteNames()
+            }
+        }
     }
     
+    // MARK: - Direct expression path (shisha)
+
+    /// Drives volume/filter/note-release straight from a 0–1 expression
+    /// signal. Used when the BellowsSource provides a clean pressure value
+    /// (shisha sensor) and the BellowsModel simulation would only add lag.
+    private func handleDirectExpression(_ expression: Double) {
+        let clamped = max(0, min(1, expression))
+        let midiVelocity = UInt8(clamped * 127)
+
+        appState.pressure = clamped
+        DiagnosticsStore.shared.updatePressure(clamped)
+        appState.velocity = Int(midiVelocity)
+
+        audioEngine.updateVelocity(midiVelocity)
+        audioEngine.updateFilter(pressure: clamped)
+
+        diagCounter += 1
+        if diagCounter % 30 == 0 {
+            Self.dbg("VM.update direct expr=\(String(format: "%.2f", clamped)) midi=\(midiVelocity) keys=\(pressedKeyToNote.count) notes=\(appState.activeNotes.count)")
+        }
+
+        let bellowsIdle = midiVelocity == 0
+        if bellowsIdle {
+            silenceAccumulator += 1.0 / 30.0
+        } else {
+            silenceAccumulator = 0
+        }
+
+        if silenceAccumulator >= silenceReleaseThreshold && !appState.isSustainOn {
+            let activeMidiNotes = appState.activeNotes
+            let heldNotes = Set(pressedKeyToNote.values)
+            var notesRemoved = false
+            for note in activeMidiNotes where !heldNotes.contains(note) {
+                audioEngine.noteOff(note)
+                appState.activeNotes.remove(note)
+                notesRemoved = true
+            }
+            if notesRemoved {
+                updateActiveNoteNames()
+            }
+        }
+
+        if pressedKeyToNote.isEmpty && !appState.isSustainOn && bellowsIdle
+            && silenceAccumulator >= silenceReleaseThreshold * 2 {
+            audioEngine.allNotesOff()
+            if !appState.activeNotes.isEmpty {
+                appState.activeNotes.removeAll()
+                updateActiveNoteNames()
+            }
+        }
+    }
+
     // MARK: - Key Handling
     
     func handleKeyDown(_ keyCode: UInt16) {
@@ -212,7 +339,18 @@ class AccordionViewModel: ObservableObject {
         if let midiNote = keyCodeToMidiNote(keyCode) {
             let octaveOffset = (appState.currentOctave - 4) * 12
             let note = UInt8(max(0, min(127, Int(midiNote) + octaveOffset)))
-            let midiVelocity: UInt8 = isKeyboardOnlyMode ? 100 : UInt8(bellowsModel.currentExpression() * 127)
+            let midiVelocity: UInt8
+            if isKeyboardOnlyMode {
+                midiVelocity = 100
+            } else if let direct = bellowsSource.directExpression {
+                // Shisha-style direct expression: use the live puff intensity
+                // as note-on velocity. Press without a puff → silent attack,
+                // and CC11 keeps tracking the puff envelope after that.
+                midiVelocity = UInt8(direct * 127)
+            } else {
+                midiVelocity = UInt8(bellowsModel.currentExpression() * 127)
+            }
+            Self.dbg("handleKeyDown code=\(keyCode) note=\(note) midiVel=\(midiVelocity) kbOnly=\(isKeyboardOnlyMode) pressure=\(String(format: "%.2f", bellowsModel.pressure))")
 
             pressedKeyToNote[keyCode] = note
             audioEngine.noteOn(note, velocity: max(midiVelocity, 1))  // Always at least velocity 1

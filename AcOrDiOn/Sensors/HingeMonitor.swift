@@ -1,22 +1,27 @@
 import Foundation
+import IOKit.hid
 
 /// Monitors the MacBook hinge angle sensor.
 /// Falls back to "keyboard-only" mode if the sensor is not available.
 ///
-/// Uses a long-running Python subprocess (`lid_angle_stream.py`) and reads
-/// angles line-by-line from its stdout. Detection runs asynchronously so the
-/// UI thread is never blocked at launch.
-class HingeMonitor: ObservableObject {
+/// Uses macOS's native IOHID API directly, so packaged builds do not depend on
+/// Python, pybooklid, Homebrew, or a machine-specific interpreter path.
+class HingeMonitor: ObservableObject, BellowsSource {
     @Published var currentAngle: Double = 90.0
     @Published var angularVelocity: Double = 0
     @Published var isSensorAvailable: Bool = false
 
+    /// BellowsSource conformance — same value as `angularVelocity`, exposed
+    /// under the source-neutral name so the ViewModel can read it without
+    /// caring whether the source is a hinge or a microphone.
+    var bellowsVelocity: Double { angularVelocity }
+
     /// Called once detection completes (whether sensor was found or not).
     var onDetectionComplete: ((Bool) -> Void)?
 
-    private var streamProcess: Process?
-    private var readSource: DispatchSourceRead?
-    private var lineBuffer: String = ""
+    private var hidManager: IOHIDManager?
+    private var hidDevice: IOHIDDevice?
+    private var pollingTimer: DispatchSourceTimer?
 
     // Rolling window of recent (timestamp, angle) samples. Velocity is derived
     // from the difference across the whole window rather than a single delta,
@@ -26,15 +31,11 @@ class HingeMonitor: ObservableObject {
     // suppress angular-quantization jitter while halving the perceived lag.
     private let velocityWindow: TimeInterval = 0.13
 
-    /// Try multiple common Python paths
-    private let pythonPaths = [
-        "/usr/bin/python3",
-        "/usr/local/bin/python3",
-        "/opt/homebrew/bin/python3",
-        "/usr/local/Caskroom/miniconda/base/bin/python3"
-    ]
+    // Hard deadzone: if the lid angle barely changed across the window, the
+    // "velocity" we see is sensor quantisation noise. Below this it's forced
+    // to zero so a stationary lid produces zero output, not a phantom hum.
+    private let angleDeadzoneDegrees: Double = 1.5
 
-    private var activePythonPath: String?
     private var hasStartedDetection = false
 
     init() {
@@ -45,8 +46,8 @@ class HingeMonitor: ObservableObject {
         stopMonitoring()
     }
 
-    /// Find a working Python with pybooklid installed. Runs off the main thread
-    /// so the app launch isn't blocked by subprocess startup.
+    /// Detect the built-in lid-angle HID device off the main thread so app
+    /// launch is never blocked by hardware discovery.
     func detectAsync(completion: @escaping (Bool) -> Void) {
         guard !hasStartedDetection else { return }
         hasStartedDetection = true
@@ -54,20 +55,22 @@ class HingeMonitor: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
-            var foundPath: String?
-            for path in self.pythonPaths {
-                guard FileManager.default.fileExists(atPath: path) else { continue }
-                if Self.pythonCanReadLidAngle(path: path) {
-                    foundPath = path
-                    break
-                }
+            // macOS may keep the HID device busy for a short time after a
+            // previous app instance exits. Retry briefly so a quick relaunch
+            // does not incorrectly fall back to keyboard-only mode.
+            var connection: (manager: IOHIDManager, device: IOHIDDevice)?
+            for _ in 0..<12 {
+                connection = Self.connectToLidSensor()
+                if connection != nil { break }
+                Thread.sleep(forTimeInterval: 0.25)
             }
 
             DispatchQueue.main.async {
-                self.activePythonPath = foundPath
-                self.isSensorAvailable = (foundPath != nil)
-                if let path = foundPath {
-                    print("HingeMonitor: Found working Python at \(path)")
+                self.hidManager = connection?.manager
+                self.hidDevice = connection?.device
+                self.isSensorAvailable = (connection != nil)
+                if connection != nil {
+                    print("HingeMonitor: Found native IOHID lid-angle sensor")
                 } else {
                     print("HingeMonitor: No hinge sensor available — running in keyboard-only mode")
                 }
@@ -76,107 +79,86 @@ class HingeMonitor: ObservableObject {
         }
     }
 
-    private static func pythonCanReadLidAngle(path: String) -> Bool {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: path)
-        task.arguments = ["-c", "from pybooklid import read_lid_angle; print(read_lid_angle())"]
-        task.standardOutput = FileHandle.nullDevice
-        task.standardError = FileHandle.nullDevice
+    private static func connectToLidSensor() -> (manager: IOHIDManager, device: IOHIDDevice)? {
+        let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
+        // Match the Sensor usage directly instead of pinning a product ID.
+        // Apple has shipped the same lid-angle sensor usage behind different
+        // internal product IDs, so the narrower match could fail after a
+        // relaunch or on another supported MacBook model.
+        let matching: [String: Any] = [
+            kIOHIDDeviceUsagePageKey as String: 0x0020,
+            kIOHIDDeviceUsageKey as String: 0x008A
+        ]
+        IOHIDManagerSetDeviceMatching(manager, matching as CFDictionary)
 
-        do {
-            try task.run()
-            task.waitUntilExit()
-            return task.terminationStatus == 0
-        } catch {
-            return false
+        guard IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone)) == kIOReturnSuccess,
+              let devices = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice> else {
+            IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
+            return nil
         }
+
+        for device in devices {
+            guard IOHIDDeviceOpen(device, IOOptionBits(kIOHIDOptionsTypeNone)) == kIOReturnSuccess else {
+                continue
+            }
+            if readAngle(from: device) != nil {
+                return (manager, device)
+            }
+            IOHIDDeviceClose(device, IOOptionBits(kIOHIDOptionsTypeNone))
+        }
+
+        IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
+        return nil
+    }
+
+    private static func readAngle(from device: IOHIDDevice) -> Double? {
+        var report = [UInt8](repeating: 0, count: 8)
+        var reportLength = report.count
+        let result = report.withUnsafeMutableBufferPointer { buffer in
+            IOHIDDeviceGetReport(
+                device,
+                kIOHIDReportTypeFeature,
+                CFIndex(1),
+                buffer.baseAddress!,
+                &reportLength
+            )
+        }
+        guard result == kIOReturnSuccess, reportLength >= 3 else { return nil }
+        let rawAngle = (UInt16(report[2]) << 8) | UInt16(report[1])
+        return Double(rawAngle)
     }
 
     func startMonitoring() {
-        guard isSensorAvailable, let pythonPath = activePythonPath else {
+        guard isSensorAvailable, let device = hidDevice else {
             print("HingeMonitor: Skipping — keyboard-only mode active")
             return
         }
-        guard streamProcess == nil else { return }
+        guard pollingTimer == nil else { return }
 
-        // Locate the streaming script. Prefer the bundled resource; if it's
-        // missing (e.g. during development), fall back to an inline one-liner.
-        let scriptArguments: [String]
-        if let scriptURL = Bundle.main.url(forResource: "lid_angle_stream", withExtension: "py") {
-            scriptArguments = [scriptURL.path]
-        } else {
-            print("HingeMonitor: lid_angle_stream.py not found in bundle — using inline fallback")
-            let inline = """
-            import sys, time
-            from pybooklid import read_lid_angle
-            sys.stdout.reconfigure(line_buffering=True)
-            while True:
-                try:
-                    print(read_lid_angle(), flush=True)
-                    time.sleep(1.0/60.0)
-                except Exception as e:
-                    print(f"ERROR:{e}", flush=True)
-                    time.sleep(0.1)
-            """
-            scriptArguments = ["-c", inline]
+        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .userInteractive))
+        timer.schedule(deadline: .now(), repeating: .milliseconds(16), leeway: .milliseconds(2))
+        timer.setEventHandler { [weak self] in
+            guard let self, let angle = Self.readAngle(from: device) else { return }
+            self.updateAngle(angle)
         }
-
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: pythonPath)
-        task.arguments = scriptArguments
-
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = FileHandle.nullDevice
-
-        do {
-            try task.run()
-            streamProcess = task
-            print("HingeMonitor: Started streaming subprocess (\(task.processIdentifier))")
-            attachReadSource(to: pipe.fileHandleForReading)
-        } catch {
-            print("HingeMonitor: Failed to start streaming subprocess: \(error)")
-            streamProcess = nil
-        }
+        timer.resume()
+        pollingTimer = timer
+        print("HingeMonitor: Started native IOHID polling")
     }
 
     func stopMonitoring() {
-        readSource?.cancel()
-        readSource = nil
-
-        if let task = streamProcess, task.isRunning {
-            task.terminate()
+        pollingTimer?.cancel()
+        pollingTimer = nil
+        if let device = hidDevice {
+            IOHIDDeviceClose(device, IOOptionBits(kIOHIDOptionsTypeNone))
         }
-        streamProcess = nil
-        lineBuffer = ""
+        if let manager = hidManager {
+            IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
+        }
+        hidDevice = nil
+        hidManager = nil
         angleHistory.removeAll()
         print("HingeMonitor: Stopped")
-    }
-
-    private func attachReadSource(to handle: FileHandle) {
-        let fd = handle.fileDescriptor
-        let source = DispatchSource.makeReadSource(fileDescriptor: fd, queue: .global(qos: .userInteractive))
-        source.setEventHandler { [weak self] in
-            let data = handle.availableData
-            guard !data.isEmpty, let chunk = String(data: data, encoding: .utf8) else { return }
-            self?.consumeChunk(chunk)
-        }
-        source.setCancelHandler {
-            try? handle.close()
-        }
-        source.resume()
-        readSource = source
-    }
-
-    private func consumeChunk(_ chunk: String) {
-        lineBuffer.append(chunk)
-        while let newlineRange = lineBuffer.range(of: "\n") {
-            let line = String(lineBuffer[..<newlineRange.lowerBound])
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            lineBuffer.removeSubrange(..<newlineRange.upperBound)
-            guard !line.isEmpty, !line.hasPrefix("ERROR"), let angle = Double(line) else { continue }
-            updateAngle(angle)
-        }
     }
 
     private func updateAngle(_ newAngle: Double) {
@@ -196,9 +178,11 @@ class HingeMonitor: ObservableObject {
         let velocity: Double
         if let oldest = angleHistory.first {
             let dt = now.timeIntervalSince(oldest.time)
-            if dt > 0.0 {
-                velocity = abs(newAngle - oldest.angle) / dt
+            let delta = abs(newAngle - oldest.angle)
+            if dt > 0.0 && delta >= angleDeadzoneDegrees {
+                velocity = delta / dt
             } else {
+                // Below deadzone → treat as truly stationary, not just slow.
                 velocity = 0
             }
         } else {

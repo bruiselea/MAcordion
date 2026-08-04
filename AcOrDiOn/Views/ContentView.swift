@@ -1,399 +1,908 @@
 import SwiftUI
 import AppKit
 
-struct ContentView: View {
-    @StateObject private var viewModel = AccordionViewModel()
-    @EnvironmentObject var keyboardHandler: KeyboardHandler
-    @AppStorage("hasSeenHowToPlay") private var hasSeenHowToPlay: Bool = false
-    
-    var body: some View {
+public enum BellowsMode {
+    case hinge
+    case breath
+    case shisha
+
+    fileprivate func makeSource() -> BellowsSource {
+        switch self {
+        case .hinge: return HingeMonitor()
+        case .breath: return BreathMonitor()
+        case .shisha: return ShishaMonitor()
+        }
+    }
+
+    fileprivate var bellowsLabel: String {
+        switch self {
+        case .hinge: return "Hinge / Bellows"
+        case .breath: return "Breath / Bellows"
+        case .shisha: return "Shisha / Bellows"
+        }
+    }
+
+    fileprivate var onboardingBody: String {
+        switch self {
+        case .hinge:
+            return "Open and close your MacBook display to stretch the on-screen bellows. The speed of the movement controls expression."
+        case .breath:
+            return "Blow gently toward the microphone to move air through the instrument and shape the expression."
+        case .shisha:
+            return "Draw or blow through the connected pressure sensor to move the bellows and shape the expression."
+        }
+    }
+}
+
+public struct ContentView: View {
+    private let mode: BellowsMode
+    @StateObject private var viewModel: AccordionViewModel
+    @EnvironmentObject private var keyboardHandler: KeyboardHandler
+    @AppStorage("hasSeenHowToPlay") private var hasSeenHowToPlay = false
+
+    public init(mode: BellowsMode = .hinge) {
+        self.mode = mode
+        _viewModel = StateObject(wrappedValue: AccordionViewModel(bellowsSource: mode.makeSource()))
+    }
+
+    public var body: some View {
         ZStack {
-            // Elegant burgundy/leather-like background
-            LinearGradient(
-                gradient: Gradient(colors: [Color(hex: "4A0E17"), Color(hex: "1A0508")]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            
-            // Subtle wood/leather texture overlay
-            Color.black.opacity(0.2)
+            StudioPalette.background
                 .ignoresSafeArea()
-            
-            VStack(spacing: 25) {
-                // Header with classic serif typography and gold accent
-                Text("🪗 MAcordion")
-                    .font(.system(size: 56, weight: .bold, design: .serif))
-                    .foregroundColor(Color(hex: "F3E5AB")) // Ivory/Gold
-                    .shadow(color: .black.opacity(0.8), radius: 4, x: 0, y: 4)
-                    .padding(.top, 10)
-                
-                // Keyboard status indicator removed for clean UI
-                
-                HStack(alignment: .top, spacing: 40) {
-                    // Left Side: Controls & Registers (Accordion Bass Side)
-                    VStack(spacing: 25) {
-                        Text("REGISTERS")
-                            .font(.system(size: 12, weight: .black, design: .serif))
-                            .foregroundColor(Color(hex: "D4AF37"))
-                            .tracking(2)
-                        
-                        VStack(spacing: 15) {
-                            RegisterButton(label: "SUSTAIN", isActive: viewModel.appState.isSustainOn)
-                            RegisterButton(label: "AIR VALVE", isActive: viewModel.appState.isAirValveOpen)
+
+            GeometryReader { geometry in
+                VStack(spacing: 0) {
+                    StudioHeader(
+                        onHelp: {
+                            withAnimation(.easeOut(duration: 0.18)) {
+                                hasSeenHowToPlay = false
+                            }
                         }
-                        .padding(20)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(LinearGradient(colors: [Color(hex: "2A080C"), Color.black], startPoint: .top, endPoint: .bottom))
-                                .shadow(color: .black.opacity(0.6), radius: 10, x: 0, y: 10)
+                    )
+
+                    Divider()
+                        .overlay(StudioPalette.separator)
+
+                    HStack(spacing: 26) {
+                        PerformanceControls(
+                            sustainOn: viewModel.appState.isSustainOn,
+                            airValveOpen: viewModel.appState.isAirValveOpen,
+                            octave: viewModel.appState.currentOctave,
+                            onSustain: { viewModel.handleKeyDown(48) },
+                            onAirValve: { isOpen in
+                                if isOpen {
+                                    viewModel.handleKeyDown(49)
+                                } else {
+                                    viewModel.handleKeyUp(49)
+                                }
+                            },
+                            onOctaveDown: { viewModel.handleKeyDown(6) },
+                            onOctaveUp: { viewModel.handleKeyDown(7) }
                         )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16).stroke(Color(hex: "D4AF37").opacity(0.3), lineWidth: 1)
+                        .frame(width: min(230, max(205, geometry.size.width * 0.18)))
+
+                        VerticalBellowsView(
+                            mode: mode,
+                            angle: displayAngle,
+                            pressure: viewModel.appState.pressure
                         )
-                        
-                        OctaveView(octave: viewModel.appState.currentOctave)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                        AirPressureMeter(level: displayExpression)
+                            .frame(width: 72)
                     }
-                    
-                    // Center: Bellows Visualizer
-                    // TODO: Replace this with a realistic accordion animation later.
-                    // For now, it is hidden for the release.
-                    /*
-                    VStack {
-                        Text("BELLOWS")
-                            .font(.system(size: 12, weight: .black, design: .serif))
-                            .foregroundColor(Color(hex: "D4AF37"))
-                            .tracking(2)
-                            .padding(.bottom, 10)
-                        
-                        HingeAngleView(angle: viewModel.appState.currentAngle, pressure: viewModel.appState.pressure)
-                    }
-                    */
-                }
-                
-                Spacer()
-                
-                // Bottom: Piano Keys (Treble Side)
-                VStack(spacing: 15) {
-                    PianoKeysView(activeNotes: viewModel.appState.activeNotes)
-                    KeyboardHintView()
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 20)
+                    .frame(maxHeight: .infinity)
+
+                    PianoKeyboardView(
+                        activeNotes: viewModel.appState.activeNotes,
+                        octave: viewModel.appState.currentOctave,
+                        onKeyDown: viewModel.handleKeyDown,
+                        onKeyUp: viewModel.handleKeyUp
+                    )
+                    .frame(height: min(250, max(190, geometry.size.height * 0.29)))
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 18)
                 }
             }
-            .padding(40)
-            .blur(radius: hasSeenHowToPlay ? 0 : 10)
-            
-            // Onboarding Overlay
+            .blur(radius: hasSeenHowToPlay ? 0 : 8)
+
             if !hasSeenHowToPlay {
-                Color.black.opacity(0.6).ignoresSafeArea()
-                HowToPlayView {
-                    withAnimation {
+                StudioPalette.background.opacity(0.78)
+                    .ignoresSafeArea()
+
+                HowToPlayView(bodyText: mode.onboardingBody) {
+                    withAnimation(.easeOut(duration: 0.18)) {
                         hasSeenHowToPlay = true
                     }
                 }
+                .transition(.scale(scale: 0.98).combined(with: .opacity))
             }
         }
         .onAppear(perform: setup)
         .onDisappear(perform: cleanup)
     }
-    
-    private func setup() {
-        print("ContentView: setup")
-        viewModel.start()
-        
-        // Connect keyboard handler from environment to the ViewModel
-        keyboardHandler.onKeyDown = { keyCode in
-            viewModel.handleKeyDown(keyCode)
+
+    private var displayAngle: Double {
+        if mode == .hinge {
+            return viewModel.appState.currentAngle
         }
-        keyboardHandler.onKeyUp = { keyCode in
-            viewModel.handleKeyUp(keyCode)
-        }
+        return 30 + viewModel.appState.pressure * 110
     }
-    
+
+    private var displayExpression: Double {
+        if viewModel.isKeyboardOnlyMode {
+            return viewModel.appState.activeNotes.isEmpty ? 0 : 0.72
+        }
+        return max(Double(viewModel.appState.velocity) / 127, viewModel.appState.pressure * 0.25)
+    }
+
+    private func setup() {
+        viewModel.start()
+        keyboardHandler.onKeyDown = viewModel.handleKeyDown
+        keyboardHandler.onKeyUp = viewModel.handleKeyUp
+    }
+
     private func cleanup() {
         viewModel.stop()
     }
 }
 
-// MARK: - Subviews
+public struct DiagnosticsSettingsView: View {
+    private let mode: BellowsMode
+    @ObservedObject private var diagnostics = DiagnosticsStore.shared
 
-struct HingeAngleView: View {
-    let angle: Double
-    let pressure: Double
-    
-    var body: some View {
-        ZStack {
-            // Elegant brass ring background
-            Circle()
-                .trim(from: 0.25, to: 0.75)
-                .stroke(Color(hex: "D4AF37").opacity(0.2), style: StrokeStyle(lineWidth: 12, lineCap: .round))
-                .frame(width: 220, height: 220)
-                .rotationEffect(.degrees(180))
-            
-            // Active bellows opening arc (Crimson/Gold gradient)
-            Circle()
-                .trim(from: 0.25, to: 0.25 + (angle / 360.0) * 0.5)
-                .stroke(
-                    LinearGradient(colors: [Color(hex: "8b0000"), Color(hex: "D4AF37"), Color(hex: "FFF7D6")], startPoint: .leading, endPoint: .trailing),
-                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
+    public init(mode: BellowsMode) {
+        self.mode = mode
+    }
+
+    public var body: some View {
+        Form {
+            Section("Sensor") {
+                LabeledContent("Source", value: sourceName)
+                LabeledContent("Status") {
+                    Label(
+                        diagnostics.isConnected ? "Connected" : "Unavailable",
+                        systemImage: diagnostics.isConnected
+                            ? "checkmark.circle.fill"
+                            : "exclamationmark.circle"
+                    )
+                    .foregroundStyle(
+                        diagnostics.isConnected
+                            ? StudioPalette.connected
+                            : StudioPalette.secondaryText
+                    )
+                }
+
+                if mode == .hinge {
+                    LabeledContent(
+                        "Hinge angle",
+                        value: "\(Int(diagnostics.angle.rounded()))°"
+                    )
+                }
+
+                LabeledContent(
+                    "Air pressure",
+                    value: "\(Int(min(1, max(0, diagnostics.pressure)) * 100))%"
                 )
-                .frame(width: 220, height: 220)
-                .rotationEffect(.degrees(180))
-                .shadow(color: Color(hex: "D4AF37").opacity(0.5), radius: 8, x: 0, y: 0)
-            
-            VStack(spacing: 0) {
-                // Angle display removed for release
-                Spacer()
-                    .frame(height: 52)
-                
-                // Bellows Pressure indicator (looks like an air gauge)
-                VStack(spacing: 4) {
-                    ZStack(alignment: .leading) {
-                        // Background slot
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.black.opacity(0.6))
-                            .frame(width: 120, height: 8)
-                            .overlay(RoundedRectangle(cornerRadius: 3).stroke(Color(hex: "D4AF37").opacity(0.4), lineWidth: 0.5))
-                        
-                        // Fill
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(LinearGradient(colors: [Color.green.opacity(0.8), Color.yellow, Color.red], startPoint: .leading, endPoint: .trailing))
-                            .frame(width: 120 * CGFloat(pressure), height: 8)
-                            .shadow(color: .black, radius: 2)
-                    }
-                    Text("AIR TANK")
-                        .font(.system(size: 9, weight: .bold, design: .serif))
-                        .foregroundColor(Color(hex: "D4AF37").opacity(0.8))
-                        .tracking(1)
-                }
-                .padding(.top, 10)
             }
+        }
+        .formStyle(.grouped)
+        .padding(20)
+        .frame(width: 420, height: 260)
+    }
+
+    private var sourceName: String {
+        switch mode {
+        case .hinge: return "MacBook hinge sensor"
+        case .breath: return "Built-in microphone"
+        case .shisha: return "Shisha pressure sensor"
         }
     }
 }
 
-// Visual representation of standard piano keys
-struct PianoKeysView: View {
-    let activeNotes: Set<UInt8>
-    
-    // 1-octave representation (12 keys: 7 white, 5 black) from C4 to B4
-    let whiteKeys: [UInt8] = [60, 62, 64, 65, 67, 69, 71] // C, D, E, F, G, A, B
-    
-    // Position represents the index of the white key it follows.
-    // e.g., 1.0 means it's right after white key index 0 (C), centered between 0 and 1.
-    let blackKeys: [UInt8: CGFloat] = [
-        61: 1.0, 63: 2.0, // C#, D#
-        66: 4.0, 68: 5.0, 70: 6.0 // F#, G#, A#
-    ]
-    
-    let keyWidth: CGFloat = 40
-    let keyHeight: CGFloat = 140
-    let keySpacing: CGFloat = 1
-    
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            // Background board
-            let totalWidth = CGFloat(whiteKeys.count) * keyWidth + CGFloat(whiteKeys.count - 1) * keySpacing + 10
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(hex: "1A0508"))
-                .shadow(color: .black, radius: 10, x: 0, y: 5)
-                .frame(width: totalWidth, height: keyHeight + 10)
-            
-            // White keys
-            HStack(spacing: keySpacing) {
-                ForEach(whiteKeys, id: \.self) { note in
-                    let isPressed = isNoteActive(note)
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(isPressed ? Color(hex: "E0D4C3") : Color(hex: "FDFBEE")) // Ivory
-                        .frame(width: keyWidth, height: keyHeight)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 4).stroke(Color.black.opacity(0.3), lineWidth: 1)
-                        )
-                        .shadow(color: .black.opacity(isPressed ? 0.0 : 0.4), radius: isPressed ? 0 : 2, x: 0, y: isPressed ? 0 : 2)
-                        .offset(y: isPressed ? 4 : 0)
-                }
-            }
-            .padding(5)
-            
-            // Black Keys
-            ForEach(Array(blackKeys.keys), id: \.self) { note in
-                if let position = blackKeys[note] {
-                    let isPressed = isNoteActive(note)
-                    // The center of the boundary between white key (position-1) and white key (position)
-                    let leftOffset = 5.0 + position * (keyWidth + keySpacing) - (keySpacing / 2.0)
-                    let blackKeyWidth = keyWidth * 0.65
-                    
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(isPressed ? Color.black : Color(hex: "222222"))
-                        .frame(width: blackKeyWidth, height: keyHeight * 0.6)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 3).stroke(Color.black, lineWidth: 1)
-                        )
-                        .shadow(color: .black, radius: isPressed ? 0 : 4, x: 0, y: isPressed ? 0 : 4)
-                        .offset(x: leftOffset - (blackKeyWidth / 2.0), y: 5 + (isPressed ? 3 : 0))
-                }
-            }
-        }
-    }
-    
-    private func isNoteActive(_ note: UInt8) -> Bool {
-        // We do modulo 12 math so playing ANY 'C' lights up the 'C' key visually
-        let noteClass = note % 12
-        return activeNotes.contains(where: { $0 % 12 == noteClass })
-    }
-}
+// MARK: - Header
 
-struct RegisterButton: View {
-    let label: String
-    let isActive: Bool
-    
-    var body: some View {
-        RegisterButtonStyle(label: label, isActive: isActive, activeColor: Color(hex: "D4AF37"))
-    }
-}
+private struct StudioHeader: View {
+    let onHelp: () -> Void
 
-struct RegisterButtonStyle: View {
-    let label: String
-    let isActive: Bool
-    let activeColor: Color
-    
     var body: some View {
         HStack {
-            // The mechanical button
-            Circle()
-                .fill(isActive ? activeColor : Color(hex: "E0D4C3")) // Ivory when inactive
-                .frame(width: 18, height: 18)
-                .shadow(color: isActive ? activeColor.opacity(0.8) : .black.opacity(0.6), radius: isActive ? 4 : 2, x: 0, y: isActive ? 0 : 2)
-                .overlay(Circle().stroke(Color.black.opacity(0.3), lineWidth: 1))
-            
-            Text(label)
-                .font(.system(size: 11, weight: .bold, design: .serif))
-                .foregroundColor(isActive ? activeColor : Color(hex: "FFF7D6").opacity(0.6))
-                .frame(width: 70, alignment: .leading)
+            HStack(spacing: 12) {
+                Image(systemName: "waveform.path")
+                    .font(.system(size: 25, weight: .semibold))
+                    .foregroundStyle(StudioPalette.accent)
+                    .frame(width: 34, height: 34)
+                    .background(StudioPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 9))
+
+                Text("MAcordion")
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .foregroundStyle(StudioPalette.primaryText)
+            }
+
+            Spacer()
+
+            Button(action: onHelp) {
+                Label("Help", systemImage: "questionmark.circle")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(StudioPalette.secondaryText)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+            .accessibilityHint("Shows keyboard controls and playing instructions")
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color.black.opacity(0.3))
-        .cornerRadius(20)
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.05), lineWidth: 1))
+        .padding(.horizontal, 28)
+        .frame(height: 68)
+        .background(StudioPalette.header)
     }
 }
 
-struct OctaveView: View {
+// MARK: - Controls
+
+private struct PerformanceControls: View {
+    let sustainOn: Bool
+    let airValveOpen: Bool
     let octave: Int
+    let onSustain: () -> Void
+    let onAirValve: (Bool) -> Void
+    let onOctaveDown: () -> Void
+    let onOctaveUp: () -> Void
+
     var body: some View {
-        VStack(spacing: 8) {
-            Text("OCTAVE")
-                .font(.system(size: 10, weight: .bold, design: .serif))
-                .foregroundColor(Color(hex: "D4AF37"))
-                .tracking(1)
-            
-            HStack(spacing: 6) {
-                ForEach(2..<7, id: \.self) { i in 
-                    Circle()
-                        .fill(i == octave ? Color(hex: "D4AF37") : Color.black)
-                        .frame(width: 10, height: 10)
-                        .overlay(Circle().stroke(Color(hex: "D4AF37").opacity(0.5), lineWidth: 1))
-                        .shadow(color: i == octave ? Color(hex: "D4AF37") : .clear, radius: 3)
+        VStack(spacing: 0) {
+            ToggleControl(
+                title: "Sustain",
+                shortcut: "Tab",
+                systemImage: "waveform",
+                isActive: sustainOn,
+                action: onSustain
+            )
+
+            Divider().overlay(StudioPalette.separator)
+
+            MomentaryControl(
+                title: "Air Valve",
+                shortcut: "Hold Space",
+                systemImage: "wind",
+                isActive: airValveOpen,
+                onPressedChange: onAirValve
+            )
+
+            Divider()
+                .overlay(StudioPalette.separator)
+                .padding(.vertical, 18)
+
+            VStack(spacing: 12) {
+                Text("Octave")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(StudioPalette.secondaryText)
+
+                HStack(spacing: 18) {
+                    RoundIconButton(
+                        systemImage: "minus",
+                        accessibilityLabel: "Octave down",
+                        action: onOctaveDown
+                    )
+                    .disabled(octave <= 0)
+
+                    Text("C\(octave)")
+                        .font(.system(size: 31, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(StudioPalette.primaryText)
+                        .frame(minWidth: 52)
+
+                    RoundIconButton(
+                        systemImage: "plus",
+                        accessibilityLabel: "Octave up",
+                        action: onOctaveUp
+                    )
+                    .disabled(octave >= 8)
+                }
+
+                Text("Z / X")
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(StudioPalette.tertiaryText)
+            }
+            .padding(.bottom, 6)
+        }
+        .padding(16)
+        .background(StudioPalette.surface, in: RoundedRectangle(cornerRadius: 18))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(StudioPalette.separator, lineWidth: 1)
+        }
+    }
+}
+
+private struct ToggleControl: View {
+    let title: String
+    let shortcut: String
+    let systemImage: String
+    let isActive: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(isActive ? StudioPalette.accent : StudioPalette.secondaryText)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(StudioPalette.primaryText)
+                    Text(shortcut)
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundStyle(StudioPalette.tertiaryText)
+                }
+
+                Spacer()
+
+                StateSwitch(isActive: isActive)
+            }
+            .contentShape(Rectangle())
+            .padding(.vertical, 13)
+        }
+        .buttonStyle(.plain)
+        .accessibilityValue(isActive ? "On" : "Off")
+    }
+}
+
+private struct MomentaryControl: View {
+    let title: String
+    let shortcut: String
+    let systemImage: String
+    let isActive: Bool
+    let onPressedChange: (Bool) -> Void
+    @State private var pointerIsDown = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(isActive ? StudioPalette.accent : StudioPalette.secondaryText)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(StudioPalette.primaryText)
+                Text(shortcut)
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(StudioPalette.tertiaryText)
+            }
+
+            Spacer()
+
+            StateSwitch(isActive: isActive)
+        }
+        .contentShape(Rectangle())
+        .padding(.vertical, 13)
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    guard !pointerIsDown else { return }
+                    pointerIsDown = true
+                    onPressedChange(true)
+                }
+                .onEnded { _ in
+                    pointerIsDown = false
+                    onPressedChange(false)
+                }
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityValue(isActive ? "Open" : "Closed")
+        .accessibilityHint("Press and hold to open")
+    }
+}
+
+private struct StateSwitch: View {
+    let isActive: Bool
+
+    var body: some View {
+        ZStack(alignment: isActive ? .trailing : .leading) {
+            Capsule()
+                .fill(isActive ? StudioPalette.accent : StudioPalette.controlTrack)
+                .frame(width: 46, height: 26)
+
+            Circle()
+                .fill(StudioPalette.switchThumb)
+                .frame(width: 20, height: 20)
+                .padding(3)
+        }
+        .overlay {
+            Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1)
+        }
+        .animation(.easeOut(duration: 0.14), value: isActive)
+    }
+}
+
+private struct RoundIconButton: View {
+    let systemImage: String
+    let accessibilityLabel: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(StudioPalette.primaryText)
+                .frame(width: 38, height: 38)
+                .background(StudioPalette.surfaceRaised, in: Circle())
+                .overlay {
+                    Circle().stroke(StudioPalette.separator, lineWidth: 1)
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+    }
+}
+
+// MARK: - Bellows
+
+private struct VerticalBellowsView: View {
+    let mode: BellowsMode
+    let angle: Double
+    let pressure: Double
+
+    private var clampedAngle: Double {
+        min(140, max(30, angle))
+    }
+
+    private var normalizedAngle: Double {
+        (clampedAngle - 30) / 110
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            let availableHeight = max(180, geometry.size.height)
+            let bellowsHeight = min(
+                availableHeight,
+                155 + CGFloat(normalizedAngle) * max(0, availableHeight - 155)
+            )
+
+            VStack {
+                Spacer(minLength: 0)
+
+                BellowsBody(pressure: pressure)
+                    .frame(height: bellowsHeight)
+                    // The physical hinge is already a live control signal.
+                    // Render its linear height mapping without interpolation.
+                    .transaction { transaction in
+                        transaction.animation = nil
+                    }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(mode.bellowsLabel)
+        .accessibilityValue("\(Int(clampedAngle.rounded())) degrees")
+    }
+}
+
+private struct BellowsBody: View {
+    let pressure: Double
+    private let foldCount = 14
+
+    var body: some View {
+        GeometryReader { geometry in
+            let plateHeight: CGFloat = 31
+            let accentHeight: CGFloat = 5
+            let foldsHeight = max(
+                60,
+                geometry.size.height - plateHeight * 2 - accentHeight * 2
+            )
+            let foldHeight = foldsHeight / CGFloat(foldCount)
+
+            VStack(spacing: 0) {
+                BellowsEndPlate()
+                    .frame(height: plateHeight)
+
+                StudioPalette.accent
+                    .opacity(0.7 + min(1, pressure) * 0.3)
+                    .frame(height: accentHeight)
+                    .padding(.horizontal, 13)
+
+                VStack(spacing: -1) {
+                    ForEach(0..<foldCount, id: \.self) { index in
+                        BellowsFoldShape(inset: index.isMultiple(of: 2) ? 6 : 13)
+                            .fill(
+                                LinearGradient(
+                                    colors: index.isMultiple(of: 2)
+                                        ? [Color(hex: "2C3035"), Color(hex: "0D0F11")]
+                                        : [Color(hex: "101215"), Color(hex: "25292D")],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .overlay {
+                                BellowsFoldShape(inset: index.isMultiple(of: 2) ? 6 : 13)
+                                    .stroke(Color.white.opacity(0.10), lineWidth: 0.7)
+                            }
+                            .frame(height: foldHeight + 1)
+                    }
+                }
+                .frame(height: foldsHeight)
+
+                StudioPalette.accent
+                    .opacity(0.7 + min(1, pressure) * 0.3)
+                    .frame(height: accentHeight)
+                    .padding(.horizontal, 13)
+
+                BellowsEndPlate()
+                    .frame(height: plateHeight)
+            }
+            .shadow(color: Color.black.opacity(0.38), radius: 14, y: 8)
+        }
+    }
+}
+
+private struct BellowsEndPlate: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 8)
+            .fill(StudioPalette.surfaceRaised)
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.white.opacity(0.13), lineWidth: 1)
+            }
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(Color.white.opacity(0.06))
+                    .frame(height: 1)
+                    .padding(.horizontal, 8)
+                    .padding(.top, 3)
+            }
+    }
+}
+
+private struct BellowsFoldShape: Shape {
+    let inset: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: inset, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - inset, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.maxX - inset, y: rect.maxY))
+        path.addLine(to: CGPoint(x: inset, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct AirPressureMeter: View {
+    let level: Double
+
+    private var clampedLevel: Double {
+        min(1, max(0, level))
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .bottom) {
+                Capsule()
+                    .fill(StudioPalette.controlTrack)
+
+                Capsule()
+                    .fill(StudioPalette.accent)
+                    .frame(height: max(8, geometry.size.height * CGFloat(clampedLevel)))
+            }
+            .frame(width: 25)
+            .overlay {
+                Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.vertical, 22)
+        }
+        .background(StudioPalette.surface, in: RoundedRectangle(cornerRadius: 18))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(StudioPalette.separator, lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Air pressure")
+        .accessibilityValue("\(Int(clampedLevel * 100)) percent")
+    }
+}
+
+// MARK: - Piano
+
+private struct PianoKeySpec: Identifiable {
+    let keyCode: UInt16
+    let keyLabel: String
+    let noteLabel: String
+    let semitoneOffset: Int
+    let boundary: CGFloat?
+
+    var id: UInt16 { keyCode }
+}
+
+private struct PianoKeyboardView: View {
+    let activeNotes: Set<UInt8>
+    let octave: Int
+    let onKeyDown: (UInt16) -> Void
+    let onKeyUp: (UInt16) -> Void
+
+    private let whiteKeys = [
+        PianoKeySpec(keyCode: 0, keyLabel: "A", noteLabel: "C", semitoneOffset: 0, boundary: nil),
+        PianoKeySpec(keyCode: 1, keyLabel: "S", noteLabel: "D", semitoneOffset: 2, boundary: nil),
+        PianoKeySpec(keyCode: 2, keyLabel: "D", noteLabel: "E", semitoneOffset: 4, boundary: nil),
+        PianoKeySpec(keyCode: 3, keyLabel: "F", noteLabel: "F", semitoneOffset: 5, boundary: nil),
+        PianoKeySpec(keyCode: 5, keyLabel: "G", noteLabel: "G", semitoneOffset: 7, boundary: nil),
+        PianoKeySpec(keyCode: 4, keyLabel: "H", noteLabel: "A", semitoneOffset: 9, boundary: nil),
+        PianoKeySpec(keyCode: 38, keyLabel: "J", noteLabel: "B", semitoneOffset: 11, boundary: nil),
+        PianoKeySpec(keyCode: 40, keyLabel: "K", noteLabel: "C", semitoneOffset: 12, boundary: nil),
+        PianoKeySpec(keyCode: 37, keyLabel: "L", noteLabel: "D", semitoneOffset: 14, boundary: nil),
+        PianoKeySpec(keyCode: 41, keyLabel: ";", noteLabel: "E", semitoneOffset: 16, boundary: nil)
+    ]
+
+    private let blackKeys = [
+        PianoKeySpec(keyCode: 13, keyLabel: "W", noteLabel: "C♯", semitoneOffset: 1, boundary: 1),
+        PianoKeySpec(keyCode: 14, keyLabel: "E", noteLabel: "D♯", semitoneOffset: 3, boundary: 2),
+        PianoKeySpec(keyCode: 17, keyLabel: "T", noteLabel: "F♯", semitoneOffset: 6, boundary: 4),
+        PianoKeySpec(keyCode: 16, keyLabel: "Y", noteLabel: "G♯", semitoneOffset: 8, boundary: 5),
+        PianoKeySpec(keyCode: 32, keyLabel: "U", noteLabel: "A♯", semitoneOffset: 10, boundary: 6),
+        PianoKeySpec(keyCode: 31, keyLabel: "O", noteLabel: "C♯", semitoneOffset: 13, boundary: 8),
+        PianoKeySpec(keyCode: 35, keyLabel: "P", noteLabel: "D♯", semitoneOffset: 15, boundary: 9)
+    ]
+
+    var body: some View {
+        GeometryReader { geometry in
+            let whiteWidth = geometry.size.width / CGFloat(whiteKeys.count)
+            let blackWidth = min(58, whiteWidth * 0.56)
+            let whiteHeight = geometry.size.height
+            let blackHeight = geometry.size.height * 0.62
+
+            ZStack(alignment: .topLeading) {
+                HStack(spacing: 2) {
+                    ForEach(whiteKeys) { key in
+                        PlayablePianoKey(
+                            spec: key,
+                            isBlack: false,
+                            isActive: isActive(key),
+                            onKeyDown: onKeyDown,
+                            onKeyUp: onKeyUp
+                        )
+                        .frame(width: whiteWidth - 1.8, height: whiteHeight)
+                    }
+                }
+
+                ForEach(blackKeys) { key in
+                    if let boundary = key.boundary {
+                        PlayablePianoKey(
+                            spec: key,
+                            isBlack: true,
+                            isActive: isActive(key),
+                            onKeyDown: onKeyDown,
+                            onKeyUp: onKeyUp
+                        )
+                        .frame(width: blackWidth, height: blackHeight)
+                        .offset(x: boundary * whiteWidth - blackWidth / 2)
+                        .zIndex(2)
+                    }
                 }
             }
-            Text("C\(octave)")
-                .font(.system(size: 14, weight: .medium, design: .serif))
-                .foregroundColor(Color(hex: "FFF7D6"))
+            .background(StudioPalette.keyboardBed)
+            .clipShape(RoundedRectangle(cornerRadius: 9))
+            .overlay {
+                RoundedRectangle(cornerRadius: 9)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            }
+            .shadow(color: Color.black.opacity(0.35), radius: 12, y: 6)
         }
-        .padding(12)
-        .background(Color.black.opacity(0.3))
-        .cornerRadius(12)
+    }
+
+    private func isActive(_ key: PianoKeySpec) -> Bool {
+        let baseNote = 60 + (octave - 4) * 12
+        let midiNote = UInt8(max(0, min(127, baseNote + key.semitoneOffset)))
+        return activeNotes.contains(midiNote)
     }
 }
 
-struct KeyboardHintView: View {
+private struct PlayablePianoKey: View {
+    let spec: PianoKeySpec
+    let isBlack: Bool
+    let isActive: Bool
+    let onKeyDown: (UInt16) -> Void
+    let onKeyUp: (UInt16) -> Void
+    @State private var pointerIsDown = false
+
     var body: some View {
-        HStack(spacing: 20) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("TREBLE KEYS").font(.system(size: 9, weight: .bold, design: .serif)).foregroundColor(Color(hex: "D4AF37"))
-                Text("Black keys: W E   T Y U   O P").font(.system(.caption, design: .monospaced))
-                Text("White keys: A S D F G H J K L ;").font(.system(.caption, design: .monospaced))
+        ZStack(alignment: .bottom) {
+            RoundedRectangle(cornerRadius: isBlack ? 5 : 4)
+                .fill(keyFill)
+                .overlay {
+                    RoundedRectangle(cornerRadius: isBlack ? 5 : 4)
+                        .stroke(keyStroke, lineWidth: 1)
+                }
+
+            VStack(spacing: 3) {
+                Text(spec.keyLabel)
+                    .font(.system(size: isBlack ? 13 : 17, weight: .semibold, design: .monospaced))
+                Text(spec.noteLabel)
+                    .font(.system(size: isBlack ? 10 : 12, weight: .medium))
+                    .opacity(0.62)
             }
-            Divider().frame(height: 30).background(Color(hex: "D4AF37").opacity(0.3))
-            VStack(alignment: .leading, spacing: 4) {
-                Text("CONTROLS").font(.system(size: 9, weight: .bold, design: .serif)).foregroundColor(Color(hex: "D4AF37"))
-                Text("Z / X: Octave Shift   Tab: Sustain").font(.system(.caption, design: .monospaced))
-                Text("Space: Air Valve").font(.system(.caption, design: .monospaced))
-            }
+            .foregroundStyle(isBlack ? Color.white : StudioPalette.keyLabel)
+            .padding(.bottom, isBlack ? 11 : 14)
         }
-        .foregroundColor(Color(hex: "FFF7D6").opacity(0.7))
-        .padding(15)
-        .background(Color.black.opacity(0.3))
-        .cornerRadius(8)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(hex: "D4AF37").opacity(0.2), lineWidth: 1))
+        .offset(y: isActive || pointerIsDown ? 3 : 0)
+        .shadow(
+            color: Color.black.opacity(isBlack && !isActive ? 0.55 : 0.16),
+            radius: isBlack ? 4 : 1,
+            y: isBlack ? 4 : 1
+        )
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    guard !pointerIsDown else { return }
+                    pointerIsDown = true
+                    onKeyDown(spec.keyCode)
+                }
+                .onEnded { _ in
+                    pointerIsDown = false
+                    onKeyUp(spec.keyCode)
+                }
+        )
+        .animation(.easeOut(duration: 0.08), value: isActive)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(spec.noteLabel), keyboard key \(spec.keyLabel)")
+        .accessibilityValue(isActive ? "Playing" : "Not playing")
     }
-}
 
-// Extensions Removed since we used a pure SwiftUI clipping approach.
-
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0; Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 6: (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default: (a, r, g, b) = (255, 0, 0, 0)
+    private var keyFill: Color {
+        if isBlack {
+            return isActive || pointerIsDown ? Color(hex: "33383D") : StudioPalette.blackKey
         }
-        self.init(.sRGB, red: Double(r) / 255, green: Double(g) / 255, blue: Double(b) / 255, opacity: Double(a) / 255)
+        return isActive || pointerIsDown ? StudioPalette.activeWhiteKey : StudioPalette.whiteKey
+    }
+
+    private var keyStroke: Color {
+        isBlack ? Color.black.opacity(0.8) : Color.black.opacity(0.28)
     }
 }
 
 // MARK: - Onboarding
-struct HowToPlayView: View {
-    var onDismiss: () -> Void
-    
+
+private struct HowToPlayView: View {
+    let bodyText: String
+    let onDismiss: () -> Void
+
     var body: some View {
-        VStack(spacing: 20) {
-            Text("How to Play")
-                .font(.system(size: 32, weight: .bold, design: .serif))
-                .foregroundColor(Color(hex: "F3E5AB"))
-            
-            if let nsImage = NSImage(named: "how_to_play") ?? NSImage(contentsOfFile: Bundle.main.path(forResource: "how_to_play", ofType: "png") ?? "") {
-                Image(nsImage: nsImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: 400)
-                    .cornerRadius(12)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "D4AF37").opacity(0.5), lineWidth: 2))
-                    .shadow(color: .black.opacity(0.8), radius: 10, x: 0, y: 10)
-            } else {
-                Text("Illustration missing. Please ensure 'how_to_play.png' is in Resources.")
-                    .foregroundColor(.red)
+        VStack(alignment: .leading, spacing: 22) {
+            HStack {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Play MAcordion")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(StudioPalette.primaryText)
+                    Text("Your Mac is the instrument.")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(StudioPalette.secondaryText)
+                }
+
+                Spacer()
+
+                Image(systemName: "waveform.path")
+                    .font(.system(size: 31, weight: .semibold))
+                    .foregroundStyle(StudioPalette.accent)
             }
-            
-            Text("Open and close the laptop lid (hinge) like a real accordion bellows to pump air.\nPress the keyboard keys to play notes while air is flowing!")
-                .font(.system(size: 14, weight: .medium, design: .serif))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
-            
+
+            Text(bodyText)
+                .font(.system(size: 15))
+                .foregroundStyle(StudioPalette.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(spacing: 0) {
+                InstructionRow(icon: "pianokeys", title: "Play notes", detail: "A–; and W–P")
+                Divider().overlay(StudioPalette.separator)
+                InstructionRow(icon: "arrow.up.and.down", title: "Change octave", detail: "Z / X")
+                Divider().overlay(StudioPalette.separator)
+                InstructionRow(icon: "wind", title: "Open air valve", detail: "Hold Space")
+                Divider().overlay(StudioPalette.separator)
+                InstructionRow(icon: "waveform", title: "Toggle sustain", detail: "Tab")
+            }
+            .background(StudioPalette.background, in: RoundedRectangle(cornerRadius: 12))
+
             Button(action: onDismiss) {
                 Text("Start Playing")
-                    .font(.system(size: 16, weight: .bold, design: .serif))
-                    .foregroundColor(Color(hex: "1A0508"))
-                    .padding(.horizontal, 30)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.white)
+                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(LinearGradient(colors: [Color(hex: "F3E5AB"), Color(hex: "D4AF37")], startPoint: .top, endPoint: .bottom))
-                    .cornerRadius(25)
-                    .shadow(radius: 5)
+                    .background(StudioPalette.accent, in: RoundedRectangle(cornerRadius: 10))
             }
             .buttonStyle(.plain)
-            .padding(.top, 10)
+            .keyboardShortcut(.defaultAction)
         }
-        .padding(40)
-        .background(
+        .padding(26)
+        .frame(width: 460)
+        .background(StudioPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 20))
+        .overlay {
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(hex: "2A080C"))
-                .shadow(color: .black.opacity(0.8), radius: 20, x: 0, y: 15)
+                .stroke(Color.white.opacity(0.14), lineWidth: 1)
+        }
+        .shadow(color: Color.black.opacity(0.5), radius: 30, y: 18)
+    }
+}
+
+private struct InstructionRow: View {
+    let icon: String
+    let title: String
+    let detail: String
+
+    var body: some View {
+        HStack(spacing: 13) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(StudioPalette.accent)
+                .frame(width: 25)
+
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(StudioPalette.primaryText)
+
+            Spacer()
+
+            Text(detail)
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .foregroundStyle(StudioPalette.tertiaryText)
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 45)
+    }
+}
+
+// MARK: - Palette
+
+private enum StudioPalette {
+    static let background = Color(hex: "101214")
+    static let header = Color(hex: "15181B")
+    static let surface = Color(hex: "1A1D20")
+    static let surfaceRaised = Color(hex: "22262A")
+    static let separator = Color.white.opacity(0.10)
+    static let primaryText = Color(hex: "F4F3EF")
+    static let secondaryText = Color(hex: "C4C6C8")
+    static let tertiaryText = Color(hex: "858A8E")
+    static let accent = Color(hex: "F05A3C")
+    static let connected = Color(hex: "55C873")
+    static let muted = Color(hex: "7A8084")
+    static let controlTrack = Color(hex: "34393D")
+    static let switchThumb = Color(hex: "F0EFEB")
+    static let keyboardBed = Color(hex: "080A0C")
+    static let whiteKey = Color(hex: "F0EEE7")
+    static let activeWhiteKey = Color(hex: "D8D5CC")
+    static let blackKey = Color(hex: "171A1D")
+    static let keyLabel = Color(hex: "202326")
+}
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 6:
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8:
+            (a, r, g, b) = (int >> 24, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
         )
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color(hex: "D4AF37").opacity(0.6), lineWidth: 1))
-        .frame(maxWidth: 600)
     }
 }
