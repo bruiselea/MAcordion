@@ -1,0 +1,6 @@
+# AcOrDiOn - MacBook Accordion
+# Required packages
+
+pygame>=2.5.0
+numpy>=1.24.0
+pybooklid>=0.1.0

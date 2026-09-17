@@ -1,0 +1,53 @@
+import Foundation
+
+/// Calculates MIDI velocity from hinge angular velocity
+class VelocityCalculator {
+    // Thresholds for velocity mapping (degrees per second)
+    private let minVelocityThreshold: Double = 1.0   // Smooth start
+    private let maxVelocityThreshold: Double = 220.0 // Wider dynamic range — reaching MIDI 127 needs a genuinely vigorous pump
+    
+    // MIDI velocity ranges
+    private let minVelocity: Int = 20
+    private let maxVelocity: Int = 127
+    
+    // Smoothing — lower factor = heavier smoothing (more lag, less jitter).
+    // VelocityCalculator runs in the 30Hz update loop, so 0.35 gives ~95ms
+    // time constant — fast enough to feel snappy without resurrecting jitter.
+    private var smoothedVelocity: Double = 0
+    private let smoothingFactor: Double = 0.35
+    
+    /// Calculate MIDI velocity (0-127) from angular velocity (degrees/second)
+    func calculateVelocity(from angularVelocity: Double) -> Int {
+        // Apply smoothing
+        smoothedVelocity = smoothedVelocity * (1 - smoothingFactor) + angularVelocity * smoothingFactor
+        
+        // Map angular velocity to MIDI velocity using an accordion-like non-linear curve
+        let velocity: Int
+        
+        if smoothedVelocity < minVelocityThreshold {
+            // Below threshold → genuine silence. Returning a scaled minVelocity
+            // here used to keep the bellows leaking volume from sensor noise.
+            velocity = 0
+        } else {
+            // Normalize movement speed between 0.0 and 1.0
+            let normalizedSpeed = min(1.0, (smoothedVelocity - minVelocityThreshold) / (maxVelocityThreshold - minVelocityThreshold))
+            
+            // Apply an exponential curve. Higher exponent => more headroom in the
+            // mid range so casual pumping sits well below the ceiling.
+            let curve = pow(normalizedSpeed, 1.6)
+            
+            velocity = minVelocity + Int(curve * Double(maxVelocity - minVelocity))
+        }
+        
+        return min(maxVelocity, max(0, velocity))
+    }
+    
+    /// Check if hinge is moving enough to produce sound
+    func isActive(angularVelocity: Double) -> Bool {
+        return angularVelocity >= minVelocityThreshold
+    }
+    
+    func reset() {
+        smoothedVelocity = 0
+    }
+}
