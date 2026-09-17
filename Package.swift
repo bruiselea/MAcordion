@@ -8,12 +8,9 @@ let package = Package(
     ],
     products: [
         .executable(name: "MAcordion", targets: ["MAcordion"]),
-        .executable(name: "MAcordionBreath", targets: ["MAcordionBreath"]),
-        .executable(name: "MAcordionShisha", targets: ["MAcordionShisha"]),
     ],
     targets: [
-        // Shared library — all audio, input, models, view models, views and
-        // bellows sources live here. Both executables import this module.
+        // Shared library — audio, hinge input, models, view models, and views.
         .target(
             name: "MAcordionCore",
             path: "AcOrDiOn",
@@ -23,23 +20,11 @@ let package = Package(
                 "Resources"
             ]
         ),
-        // Classic MAcordion — bellows driven by the MacBook lid hinge sensor.
+        // MAcordion — bellows driven by the MacBook lid hinge sensor.
         .executableTarget(
             name: "MAcordion",
             dependencies: ["MAcordionCore"],
             path: "MAcordionApp"
-        ),
-        // MAcordion Breath — bellows driven by microphone amplitude (melodica style).
-        .executableTarget(
-            name: "MAcordionBreath",
-            dependencies: ["MAcordionCore"],
-            path: "MAcordionBreath"
-        ),
-        // MAcordion Shisha — bellows driven by the USB-C-to-Shisha pressure sensor.
-        .executableTarget(
-            name: "MAcordionShisha",
-            dependencies: ["MAcordionCore"],
-            path: "MAcordionShisha"
         )
     ]
 )

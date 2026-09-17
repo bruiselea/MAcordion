@@ -1,61 +1,12 @@
 import SwiftUI
 import AppKit
 
-public enum BellowsMode {
-    case hinge
-    case breath
-    case shisha
-
-    fileprivate func makeSource() -> BellowsSource {
-        switch self {
-        case .hinge: return HingeMonitor()
-        case .breath: return BreathMonitor()
-        case .shisha: return ShishaMonitor()
-        }
-    }
-
-    fileprivate var bellowsLabel: String {
-        switch self {
-        case .hinge:
-            return L10n.string("bellows.hinge", fallback: "Hinge / Bellows")
-        case .breath:
-            return L10n.string("bellows.breath", fallback: "Breath / Bellows")
-        case .shisha:
-            return L10n.string("bellows.shisha", fallback: "Shisha / Bellows")
-        }
-    }
-
-    fileprivate var onboardingBody: String {
-        switch self {
-        case .hinge:
-            return L10n.string(
-                "onboarding.hinge.body",
-                fallback: "Open and close your MacBook display to stretch the on-screen bellows. The speed of the movement controls expression."
-            )
-        case .breath:
-            return L10n.string(
-                "onboarding.breath.body",
-                fallback: "Blow gently toward the microphone to move air through the instrument and shape the expression."
-            )
-        case .shisha:
-            return L10n.string(
-                "onboarding.shisha.body",
-                fallback: "Draw or blow through the connected pressure sensor to move the bellows and shape the expression."
-            )
-        }
-    }
-}
-
 public struct ContentView: View {
-    private let mode: BellowsMode
-    @StateObject private var viewModel: AccordionViewModel
+    @StateObject private var viewModel = AccordionViewModel(bellowsSource: HingeMonitor())
     @EnvironmentObject private var keyboardHandler: KeyboardHandler
     @AppStorage("hasSeenHowToPlay") private var hasSeenHowToPlay = false
 
-    public init(mode: BellowsMode = .hinge) {
-        self.mode = mode
-        _viewModel = StateObject(wrappedValue: AccordionViewModel(bellowsSource: mode.makeSource()))
-    }
+    public init() {}
 
     public var body: some View {
         ZStack {
@@ -94,7 +45,6 @@ public struct ContentView: View {
                         .frame(width: min(230, max(205, geometry.size.width * 0.18)))
 
                         VerticalBellowsView(
-                            mode: mode,
                             angle: displayAngle,
                             pressure: viewModel.appState.pressure
                         )
@@ -124,7 +74,12 @@ public struct ContentView: View {
                 StudioPalette.background.opacity(0.78)
                     .ignoresSafeArea()
 
-                HowToPlayView(bodyText: mode.onboardingBody) {
+                HowToPlayView(
+                    bodyText: L10n.string(
+                        "onboarding.hinge.body",
+                        fallback: "Open and close your MacBook display to stretch the on-screen bellows. The speed of the movement controls expression."
+                    )
+                ) {
                     withAnimation(.easeOut(duration: 0.18)) {
                         hasSeenHowToPlay = true
                     }
@@ -137,10 +92,7 @@ public struct ContentView: View {
     }
 
     private var displayAngle: Double {
-        if mode == .hinge {
-            return viewModel.appState.currentAngle
-        }
-        return 30 + viewModel.appState.pressure * 110
+        viewModel.appState.currentAngle
     }
 
     private var displayExpression: Double {
@@ -162,12 +114,9 @@ public struct ContentView: View {
 }
 
 public struct DiagnosticsSettingsView: View {
-    private let mode: BellowsMode
     @ObservedObject private var diagnostics = DiagnosticsStore.shared
 
-    public init(mode: BellowsMode) {
-        self.mode = mode
-    }
+    public init() {}
 
     public var body: some View {
         Form {
@@ -192,12 +141,10 @@ public struct DiagnosticsSettingsView: View {
                     )
                 }
 
-                if mode == .hinge {
-                    LabeledContent(
-                        L10n.string("settings.hingeAngle", fallback: "Hinge angle"),
-                        value: "\(Int(diagnostics.angle.rounded()))°"
-                    )
-                }
+                LabeledContent(
+                    L10n.string("settings.hingeAngle", fallback: "Hinge angle"),
+                    value: "\(Int(diagnostics.angle.rounded()))°"
+                )
 
                 LabeledContent(
                     L10n.string("settings.airPressure", fallback: "Air pressure"),
@@ -211,23 +158,10 @@ public struct DiagnosticsSettingsView: View {
     }
 
     private var sourceName: String {
-        switch mode {
-        case .hinge:
-            return L10n.string(
-                "settings.source.hinge",
-                fallback: "MacBook hinge sensor"
-            )
-        case .breath:
-            return L10n.string(
-                "settings.source.breath",
-                fallback: "Built-in microphone"
-            )
-        case .shisha:
-            return L10n.string(
-                "settings.source.shisha",
-                fallback: "Shisha pressure sensor"
-            )
-        }
+        L10n.string(
+            "settings.source.hinge",
+            fallback: "MacBook hinge sensor"
+        )
     }
 }
 
@@ -503,7 +437,6 @@ private struct RoundIconButton: View {
 // MARK: - Bellows
 
 private struct VerticalBellowsView: View {
-    let mode: BellowsMode
     let angle: Double
     let pressure: Double
 
@@ -537,7 +470,9 @@ private struct VerticalBellowsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(mode.bellowsLabel)
+        .accessibilityLabel(
+            L10n.string("bellows.hinge", fallback: "Hinge / Bellows")
+        )
         .accessibilityValue(
             L10n.format(
                 "accessibility.angle",

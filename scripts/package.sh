@@ -72,11 +72,9 @@ else
     ARCHITECTURE_LABEL="${BUILD_ARCHITECTURES[0]}"
 fi
 
-APP_NAMES=(MAcordion MAcordionBreath MAcordionShisha)
+APP_NAMES=(MAcordion)
 BUNDLE_IDS=(
     com.satounatsuki.MAcordion
-    com.satounatsuki.MAcordionBreath
-    com.satounatsuki.MAcordionShisha
 )
 
 for index in "${!APP_NAMES[@]}"; do

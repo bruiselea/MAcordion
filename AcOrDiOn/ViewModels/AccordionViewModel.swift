@@ -68,23 +68,6 @@ class AccordionViewModel: ObservableObject {
     private var silenceAccumulator: TimeInterval = 0
     private let silenceReleaseThreshold: TimeInterval = 0.25
 
-    // Diagnostic file logger (shares ShishaMonitor's debug file). Flushes
-    // every write because the file is opened append-only.
-    private static let debugLogHandle: FileHandle? = {
-        let path = "/tmp/macordion_shisha_debug.log"
-        if !FileManager.default.fileExists(atPath: path) {
-            FileManager.default.createFile(atPath: path, contents: nil)
-        }
-        let h = FileHandle(forWritingAtPath: path)
-        try? h?.seekToEnd()
-        return h
-    }()
-    private static func dbg(_ s: String) {
-        guard let h = debugLogHandle, let data = "\(Date()) \(s)\n".data(using: .utf8) else { return }
-        try? h.write(contentsOf: data)
-    }
-    private var diagCounter = 0
-
     deinit {
         stop()
     }
@@ -152,25 +135,10 @@ class AccordionViewModel: ObservableObject {
         
         // --- Bellows source mode below ---
 
-        // Direct-expression shortcut (shisha): the source already produces a
-        // clean 0–1 pressure signal, so drive volume/filter straight from it
-        // without running through VelocityCalculator + BellowsModel.
-        if let direct = bellowsSource.directExpression {
-            handleDirectExpression(direct)
-            return
-        }
-
         let rawBellowsVelocity = bellowsSource.bellowsVelocity
         let velocity = velocityCalculator.calculateVelocity(from: rawBellowsVelocity)
         appState.velocity = velocity
 
-        // Log once per second so we can correlate puffs with audio without
-        // drowning the file in 30Hz noise.
-        diagCounter += 1
-        if diagCounter % 30 == 0 {
-            Self.dbg("VM.update raw=\(String(format: "%.1f", rawBellowsVelocity)) midi=\(velocity) pressure=\(String(format: "%.2f", bellowsModel.pressure)) keys=\(pressedKeyToNote.count) notes=\(appState.activeNotes.count)")
-        }
-        
         // Update physical model based on sensor and user input
         bellowsModel.isAirValveOpen = appState.isAirValveOpen
         bellowsModel.update(hingeVelocity: Double(velocity), activeNoteCount: appState.activeNotes.count)
@@ -249,58 +217,6 @@ class AccordionViewModel: ObservableObject {
         }
     }
     
-    // MARK: - Direct expression path (shisha)
-
-    /// Drives volume/filter/note-release straight from a 0–1 expression
-    /// signal. Used when the BellowsSource provides a clean pressure value
-    /// (shisha sensor) and the BellowsModel simulation would only add lag.
-    private func handleDirectExpression(_ expression: Double) {
-        let clamped = max(0, min(1, expression))
-        let midiVelocity = UInt8(clamped * 127)
-
-        appState.pressure = clamped
-        DiagnosticsStore.shared.updatePressure(clamped)
-        appState.velocity = Int(midiVelocity)
-
-        audioEngine.updateVelocity(midiVelocity)
-        audioEngine.updateFilter(pressure: clamped)
-
-        diagCounter += 1
-        if diagCounter % 30 == 0 {
-            Self.dbg("VM.update direct expr=\(String(format: "%.2f", clamped)) midi=\(midiVelocity) keys=\(pressedKeyToNote.count) notes=\(appState.activeNotes.count)")
-        }
-
-        let bellowsIdle = midiVelocity == 0
-        if bellowsIdle {
-            silenceAccumulator += 1.0 / 30.0
-        } else {
-            silenceAccumulator = 0
-        }
-
-        if silenceAccumulator >= silenceReleaseThreshold && !appState.isSustainOn {
-            let activeMidiNotes = appState.activeNotes
-            let heldNotes = Set(pressedKeyToNote.values)
-            var notesRemoved = false
-            for note in activeMidiNotes where !heldNotes.contains(note) {
-                audioEngine.noteOff(note)
-                appState.activeNotes.remove(note)
-                notesRemoved = true
-            }
-            if notesRemoved {
-                updateActiveNoteNames()
-            }
-        }
-
-        if pressedKeyToNote.isEmpty && !appState.isSustainOn && bellowsIdle
-            && silenceAccumulator >= silenceReleaseThreshold * 2 {
-            audioEngine.allNotesOff()
-            if !appState.activeNotes.isEmpty {
-                appState.activeNotes.removeAll()
-                updateActiveNoteNames()
-            }
-        }
-    }
-
     // MARK: - Key Handling
     
     func handleKeyDown(_ keyCode: UInt16) {
@@ -342,15 +258,9 @@ class AccordionViewModel: ObservableObject {
             let midiVelocity: UInt8
             if isKeyboardOnlyMode {
                 midiVelocity = 100
-            } else if let direct = bellowsSource.directExpression {
-                // Shisha-style direct expression: use the live puff intensity
-                // as note-on velocity. Press without a puff → silent attack,
-                // and CC11 keeps tracking the puff envelope after that.
-                midiVelocity = UInt8(direct * 127)
             } else {
                 midiVelocity = UInt8(bellowsModel.currentExpression() * 127)
             }
-            Self.dbg("handleKeyDown code=\(keyCode) note=\(note) midiVel=\(midiVelocity) kbOnly=\(isKeyboardOnlyMode) pressure=\(String(format: "%.2f", bellowsModel.pressure))")
 
             pressedKeyToNote[keyCode] = note
             audioEngine.noteOn(note, velocity: max(midiVelocity, 1))  // Always at least velocity 1

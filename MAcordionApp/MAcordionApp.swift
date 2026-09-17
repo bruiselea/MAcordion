@@ -8,7 +8,7 @@ struct MAcordionApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(mode: .hinge)
+            ContentView()
                 .environmentObject(keyboardHandler)
                 .frame(minWidth: 980, minHeight: 680)
         }
@@ -18,7 +18,7 @@ struct MAcordionApp: App {
         }
 
         Settings {
-            DiagnosticsSettingsView(mode: .hinge)
+            DiagnosticsSettingsView()
         }
     }
 }

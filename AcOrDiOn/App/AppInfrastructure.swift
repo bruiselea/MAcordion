@@ -2,8 +2,7 @@ import SwiftUI
 import AppKit
 
 /// AppKit delegate that installs the global key event monitors and forces
-/// the app into the foreground. Both Hinge and Breath entry points reuse
-/// this delegate as-is — none of it is bellows-source specific.
+/// the app into the foreground.
 public final class AppDelegate: NSObject, NSApplicationDelegate {
     public override init() { super.init() }
 

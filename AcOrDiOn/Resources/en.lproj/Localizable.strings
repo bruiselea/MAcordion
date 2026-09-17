@@ -1,9 +1,5 @@
 "bellows.hinge" = "Hinge / Bellows";
-"bellows.breath" = "Breath / Bellows";
-"bellows.shisha" = "Shisha / Bellows";
 "onboarding.hinge.body" = "Open and close your MacBook display to stretch the on-screen bellows. The speed of the movement controls expression.";
-"onboarding.breath.body" = "Blow gently toward the microphone to move air through the instrument and shape the expression.";
-"onboarding.shisha.body" = "Draw or blow through the connected pressure sensor to move the bellows and shape the expression.";
 
 "settings.sensor" = "Sensor";
 "settings.source" = "Source";
@@ -13,8 +9,6 @@
 "settings.hingeAngle" = "Hinge angle";
 "settings.airPressure" = "Air pressure";
 "settings.source.hinge" = "MacBook hinge sensor";
-"settings.source.breath" = "Built-in microphone";
-"settings.source.shisha" = "Shisha pressure sensor";
 
 "header.help" = "Help";
 "header.help.hint" = "Shows keyboard controls and playing instructions";

@@ -11,9 +11,7 @@ class HingeMonitor: ObservableObject, BellowsSource {
     @Published var angularVelocity: Double = 0
     @Published var isSensorAvailable: Bool = false
 
-    /// BellowsSource conformance — same value as `angularVelocity`, exposed
-    /// under the source-neutral name so the ViewModel can read it without
-    /// caring whether the source is a hinge or a microphone.
+    /// BellowsSource conformance — same value as `angularVelocity`.
     var bellowsVelocity: Double { angularVelocity }
 
     /// Called once detection completes (whether sensor was found or not).

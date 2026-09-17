@@ -31,8 +31,6 @@
     <string>13.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>MAcordion Breath uses the microphone level to control the instrument's airflow.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
 </dict>
