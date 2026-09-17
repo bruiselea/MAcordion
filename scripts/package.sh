@@ -97,6 +97,7 @@ for index in "${!APP_NAMES[@]}"; do
     fi
     chmod 0755 "${app_path}/Contents/MacOS/${app_name}"
     cp -R "${ROOT_DIR}/AcOrDiOn/Resources/." "${app_path}/Contents/Resources/"
+    cp "${ROOT_DIR}/Packaging/AppIcon.icns" "${app_path}/Contents/Resources/AppIcon.icns"
 
     cp "${ROOT_DIR}/Packaging/Info.plist" "${app_path}/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable ${app_name}" "${app_path}/Contents/Info.plist"
